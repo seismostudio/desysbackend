@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-eng-bg: #f3f4f6;
+  --color-eng-dark: #1a202c;
+  --color-eng-panel: #edf2f7;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background-color: #f3f4f6;
+  color: #1a202c;
+}
+
+.bg-light-theme {
+  @apply bg-white;
+}
+
+.bg-dark-theme {
+  @apply bg-gray-800;
+}
+
+.title-light-theme {
+  @apply text-black font-bold text-lg p-2;
+}
+
+.title-dark-theme {
+  @apply text-white font-bold text-lg py-2 px-4;
+}
+
+.title2-dark-theme {
+  @apply text-gray-400 font-semibold text-sm py-1;
+}
+
+.label-dark-theme {
+  @apply text-gray-300 font-normal text-xs;
+}
+
+.iconbutton-dark-theme {
+  @apply p-2 cursor-pointer flex items-center justify-center text-white;
+}
+
+.input-dark-theme {
+  @apply w-full text-gray-300 border border-gray-300 rounded px-2 py-1 text-sm outline-none transition-shadow;
+}
+
+.input-dark-theme:focus {
+  @apply border-blue-500 shadow-blue-500;
+}
+
+.input-dark-theme:hover {
+  @apply border-gray-500 shadow-gray-500;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
