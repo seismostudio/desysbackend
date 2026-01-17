@@ -115,7 +115,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({ config, updateConfig, on
     };
 
     return (
-        <div className="absolute top-[6vh] left-0 w-[20vw] h-[94vh] flex shrink-0 z-30 pointer-events-none">
+        <div className="fixed top-[60px] left-0 md:w-[400px] w-[calc(100vw-40px)] h-[94vh] flex shrink-0 z-30 pointer-events-none">
             {/* Main Panel Content */}
             <div
                 className={`flex-1 flex flex-col h-full bg-dark-theme transition-transform duration-500 ease-in-out pointer-events-auto border-r border-gray-700 shadow-2xl ${isPanelOpen ? 'translate-x-0' : '-translate-x-full'}`}
@@ -218,7 +218,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({ config, updateConfig, on
                     </CollapsibleSection>
                 </div>
 
-                <div className="p-4 border-t border-gray-700 bg-dark-theme/50">
+                <div className="p-4 md:mb-0 mb-12 border-t border-gray-700 bg-dark-theme/50">
                     <button
                         onClick={onRunAnalysis}
                         disabled={isAnalyzing}
@@ -236,8 +236,8 @@ export const InputPanel: React.FC<InputPanelProps> = ({ config, updateConfig, on
             </div>
 
             {/* Toggle Button Bar - Fixed to the panel edge */}
-            <div className={`absolute top-0 flex flex-col h-full w-[2.5vw] min-w-[32px] bg-dark-theme border-r border-gray-700 transition-all duration-500 ease-in-out pointer-events-auto rounded-r-md shadow-lg
-                ${!isPanelOpen ? 'translate-x-[0px]' : 'translate-x-[20vw]'}`}>
+            <div className={`absolute top-0 flex flex-col h-full w-[40px] bg-dark-theme border-r border-gray-700 transition-all duration-500 ease-in-out pointer-events-auto rounded-r-md shadow-lg
+                ${!isPanelOpen ? 'translate-x-[0px]' : 'md:translate-x-[400px] translate-x-[calc(100vw-40px)]'}`}>
                 <button
                     onClick={() => setIsPanelOpen(!isPanelOpen)}
                     className="iconbutton-dark-theme hover:bg-gray-700 transition-colors"

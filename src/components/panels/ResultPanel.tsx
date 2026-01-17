@@ -67,8 +67,8 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({ results, stressView })
     const isSafe = results.global.isSafe;
 
     return (
-        <div className="absolute right-0 bottom-0 w-[15vw] h-[65vh] flex flex-col shrink-0 z-30 ">
-            <div className={`absolute top-0 left-0 right-0 h-[5vh] scale-y-100 flex justify-between bg-dark-theme rounded-t-lg shadow-lg items-center border-b title-dark-theme transition-all duration-500 ease-in-out overflow-hidden ${isPanelOpen ? "translate-y-[-5vh]" : "translate-y-[60vh]"}`}>
+        <div className={`fixed right-0 bottom-0 w-[300px] h-[65vh] flex flex-col overflow-hidden z-30 transition-all duration-700 ease-in-out ${isPanelOpen ? "translate-y-[0px]" : "translate-y-[calc(65vh-40px)]"}`}>
+            <div className={`h-[40px] scale-y-100 flex justify-between bg-dark-theme rounded-t-lg shadow-lg items-center border-b title-dark-theme transition-all duration-500 ease-in-out overflow-hidden`}>
                 Results Summary
                 <button
                     onClick={() => setIsPanelOpen(!isPanelOpen)}
@@ -79,7 +79,7 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({ results, stressView })
                 </button>
             </div>
 
-            <div className={`flex-1 overflow-y-auto h-full p-4 no-scrollbar bg-dark-theme transition-all duration-500 ease-in-out overflow-hidden ${isPanelOpen ? "translate-y-[0vh]" : "translate-y-full"}`}>
+            <div className={`flex-1 overflow-y-auto h-full p-4 no-scrollbar bg-dark-theme transition-all duration-500 ease-in-out`}>
                 <div className="flex flex-col gap-1 border-b border-gray-500 pb-4">
                     <div className="flex justify-between items-center">
                         <h2 className={`text-md font-semibold ${isSafe ? 'text-green-700' : 'text-red-500'}`}>

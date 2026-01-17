@@ -55,14 +55,14 @@ function App() {
   return (
     <div className="flex flex-col h-screen w-full bg-eng-bg text-eng-dark overflow-hidden font-sans">
       {/* Header */}
-      <header className="h-[6vh] bg-dark-theme flex items-center px-6 shadow-md z-20 shrink-0 border-b border-gray-700">
+      <header className="h-[60px] bg-dark-theme flex items-center px-6 shadow-md z-20 shrink-0 border-b border-gray-700">
         <div className="flex items-center gap-4">
           <div className="bg-gray-800 rounded-md flex items-center justify-center text-white text-4xl font-bold">
             <img src="/Logo.png" alt="Logo" className="w-10 h-10" />
           </div>
           <div className="flex flex-col">
             <h1 className="text-xl font-bold text-white">DEConnect</h1>
-            <span className="text-xs text-gray-400">v 0.1.0 | by <a href="https://daharengineer.com" target="_blank" rel="noopener noreferrer">Dahar Engineer</a></span>
+            <span className="text-xs text-gray-400">v 0.3.0 | by <a href="https://daharengineer.com" target="_blank" rel="noopener noreferrer">Dahar Engineer</a></span>
           </div>
         </div>
         <div className="ml-auto flex items-center gap-4">
@@ -79,7 +79,7 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="fixed top-[60px] left-0 right-0 flex-1 flex overflow-hidden">
 
         {/* Left Panel: Inputs */}
         <InputPanel
@@ -92,7 +92,7 @@ function App() {
         />
 
         {/* Center Panel: 3D */}
-        <div className="flex-1 relative bg-gradient-to-br from-gray-100 to-gray-200">
+        <div className="fixed top-[60px] left-0 right-0 h-[calc(100vh-60px)] bg-gradient-to-br from-gray-100 to-gray-200">
           <ConnectionViewer
             config={config}
             results={results}
@@ -101,14 +101,14 @@ function App() {
           />
 
           {/* Overlay Controls */}
-          <div className="absolute top-4 right-4 flex flex-col gap-2">
+          <div className="fixed top-[70px] right-4 flex flex-col gap-2">
             <div className="bg-white/90 backdrop-blur p-4 rounded-xl text-xs shadow-xl border border-white/50 text-gray-600 min-w-[200px]">
               <div className="font-black mb-3 font-mono uppercase tracking-widest border-b pb-2 flex justify-between items-center">
                 <span>Viewport</span>
               </div>
 
               <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-4 p-2 bg-gray-50 rounded-lg border border-gray-100">
+                <div className="flex items-center justify-between gap-4">
                   <div className="flex flex-col text-gray-500">
                     <span className="font-semibold text-gray-700 uppercase tracking-tighter">Stress View</span>
                     {isAnalyzing ? 'Solving Stiffness Matrix...' : 'Run Analysis First'}
@@ -127,16 +127,16 @@ function App() {
                 <div className="font-bold mb-2 text-gray-400 uppercase tracking-widest text-[10px]">Navigation</div>
                 <div className="grid grid-cols-2 gap-2 text-gray-500">
                   <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-                    <span>Left: Rotate</span>
+                    <div className="w-1 h-1 rounded-full bg-gray-300" />
+                    <span className="text-[10px]">Left: Rotate</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-                    <span>Right: Pan</span>
+                    <div className="w-1 h-1 rounded-full bg-gray-300" />
+                    <span className="text-[10px]">Right: Pan</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-                    <span>Scroll: Zoom</span>
+                    <div className="w-1 h-1 rounded-full bg-gray-300" />
+                    <span className="text-[10px]">Scroll: Zoom</span>
                   </div>
                 </div>
               </div>
