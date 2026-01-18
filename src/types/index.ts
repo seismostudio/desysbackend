@@ -229,7 +229,7 @@ export const DEFAULT_CONFIG: ConnectionConfig = {
         length: 400,
         depth: 300,
         thickness: 10,
-        flangeWidth: 180,
+        flangeWidth: 150,
         flangeThickness: 12,
         bolts: {
             enabled: true,
