@@ -56,7 +56,8 @@ const CollapsibleSection = ({ title, children, defaultOpen = false }: { title: s
     );
 };
 
-export const InputPanel: React.FC<InputPanelProps> = ({ config, updateConfig, onRunAnalysis, isAnalyzing, analysisResult, onOpenSettings }) => {
+export const InputPanel: React.FC<InputPanelProps> = ({ config, updateConfig, onRunAnalysis, isAnalyzing, onOpenSettings }) => {
+    // export const InputPanel: React.FC<InputPanelProps> = ({ config, updateConfig, onRunAnalysis, isAnalyzing, analysisResult, onOpenSettings }) => {
     const [isPanelOpen, setIsPanelOpen] = useState(true);
 
     const handleProfileChange = (section: 'beam' | 'column', profileName: string) => {
@@ -218,7 +219,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({ config, updateConfig, on
                     </CollapsibleSection>
                 </div>
 
-                <div className="p-4 md:mb-0 mb-12 border-t border-gray-700 bg-dark-theme/50">
+                {/* <div className="p-4 md:mb-0 mb-12 border-t border-gray-700 bg-dark-theme/50">
                     <button
                         onClick={onRunAnalysis}
                         disabled={isAnalyzing}
@@ -232,7 +233,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({ config, updateConfig, on
                             Analysis Complete
                         </p>
                     )}
-                </div>
+                </div> */}
             </div>
 
             {/* Toggle Button Bar - Fixed to the panel edge */}
@@ -245,6 +246,16 @@ export const InputPanel: React.FC<InputPanelProps> = ({ config, updateConfig, on
                 >
                     <PanelLeftOpen className={`w-5 h-5 transition-transform duration-300 ${isPanelOpen ? "rotate-180" : ""}`} />
                 </button>
+                <div className="p-1">
+                    <button
+                        onClick={onRunAnalysis}
+                        disabled={isAnalyzing}
+                        title={isAnalyzing ? "Analyzing..." : "Run Analysis"}
+                        className={`w-full cursor-pointer py-2 rounded-lg flex items-center justify-center gap-2 font-bold text-sm transition-all active:scale-95 shadow-lg shadow-blue-900/20 ${isAnalyzing ? 'bg-blue-600/50 cursor-not-allowed text-gray-300' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                    >
+                        {isAnalyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 fill-current" />}
+                    </button>
+                </div>
                 <button
                     onClick={onOpenSettings}
                     className="iconbutton-dark-theme hover:bg-gray-700 transition-colors"
