@@ -211,7 +211,7 @@ export const DEFAULT_CONFIG: ConnectionConfig = {
     beam: { name: "IWF 300.150.6,5.9", depth: 300, width: 150, webThickness: 6.5, flangeThickness: 9, rootRadius: 13, isUserDefined: false }, // IPE 400
     column: { name: "IWF 200.200.8.12", depth: 200, width: 200, webThickness: 8, flangeThickness: 12, rootRadius: 13, isUserDefined: false }, // HEB 300
     columnRotation: 0,
-    plate: { height: 300, width: 160, thickness: 12 },
+    plate: { height: 320, width: 160, thickness: 12 },
     bolts: {
         diameter: 16,
         grade: "8.8",

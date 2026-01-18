@@ -4,6 +4,7 @@ import { OrbitControls, Environment, ContactShadows, Grid } from '@react-three/d
 import { SteelMember } from './SteelMember';
 import { SteelPlate } from './SteelPlate';
 import { BoltGroup } from './BoltGroup';
+import { FlangeHaunchedWeld, FlangeWeld, WebHaunchedWeld, WebWeld } from './Weld';
 import { FEAMesh } from './FEAMesh';
 import { SteelHaunch } from './SteelHaunch';
 import { LoadVisualization } from './LoadVisualization';
@@ -76,6 +77,48 @@ const SceneContent: React.FC<ConnectionViewerProps> = ({ config, results, stress
                         rotation={[-Math.PI / 2, 0, isWeakAxis ? 0 : Math.PI / 2]}
                         color="#718096"
                     />
+
+                    {/* Weld (along +X axis) */}
+                    <FlangeWeld
+                        config={config.welds}
+                        dimensions={config.beam}
+                        position={[tp + config.welds.size, 0, -config.beam.width / 2]}
+                        rotation={[0, 0, Math.PI / 2]}
+                        color="#537be8"
+                    />
+                    {/* Web Weld (along +X axis) */}
+                    <WebWeld
+                        config={config.welds}
+                        dimensions={config.beam}
+                        position={[tp, config.beam.depth / 2 - config.beam.flangeThickness, 0]}
+                        rotation={[Math.PI / 2, 0, 0]}
+                        color="#537be8"
+                    />
+
+                    {config.haunch.enabled && (
+                        <>
+                            {/* Web Haunched Weld (along +X axis) */}
+                            <WebHaunchedWeld
+                                config={config.welds}
+                                dimensions={config.beam}
+                                haunchedConfig={config.haunch}
+                                position={[tp, -config.beam.depth / 2, 0]}
+                                rotation={[Math.PI / 2, 0, 0]}
+                                color="#537be8"
+                            />
+
+                            {/* Flange Haunched Weld (along +X axis) */}
+                            <FlangeHaunchedWeld
+                                config={config.welds}
+                                dimensions={config.beam}
+                                haunchedConfig={config.haunch}
+                                position={[tp, -config.beam.depth / 2, -config.haunch.flangeWidth / 2]}
+                                rotation={[0, 0, Math.PI / 2]}
+                                color="#537be8"
+                            />
+                        </>
+                    )}
+
 
                     {/* End Plate (Adjusted height and Y position) */}
                     <SteelPlate

@@ -9,10 +9,20 @@ import type { ConnectionConfig, UtilizationResult } from '../types';
 
 export function solveWelds(config: ConnectionConfig): {
     stress: UtilizationResult;
+    dim: {
+        width: number;
+        height: number;
+        thickness: number;
+    };
 } {
     if (!config.welds.enabled) {
         return {
-            stress: { utilization: 0, capacity: 0, demand: 0 }
+            stress: { utilization: 0, capacity: 0, demand: 0 },
+            dim: {
+                width: 0,
+                height: 0,
+                thickness: 0
+            }
         };
     }
 
@@ -33,10 +43,29 @@ export function solveWelds(config: ConnectionConfig): {
     // - 4 Flange welds (top/bottom, outer only for simplification) -> width b
     // - 2 Web welds (both sides) -> height (h - 2*tf)
 
-    const hw = h - 2 * tf;
+    let hw = 0
+
+    if (!config.haunch.enabled) {
+        hw = (h - 2 * tf); // weld height in beam
+    } else {
+        hw = (h - 2 * tf) + (config.haunch.depth - config.haunch.flangeThickness); // weld height in haunched beam
+    }
+
+    // const hw = h - 2 * tf;
 
     // Area of weld (Aw = Length * throat a)
-    const flangeWeldLength = 2 * b; // Top outer + Bottom outer
+
+    let flangeWeldLength = 0;
+
+    if (!config.haunch.enabled) {
+        flangeWeldLength = (2 * b) + (2 * (b - tw)); // Top outer & inner + Bottom outer & inner
+    } else {
+        flangeWeldLength = (2 * b) + (2 * (b - tw)) + ((config.haunch.flangeWidth - tw)); // Top outer & inner + Bottom outer & inner + Haunch flange
+    }
+
+
+
+    // const flangeWeldLength = (2 * b) + (2 * (b - tw)); // Top outer & inner + Bottom outer & inner
     const webWeldLength = 2 * hw;
     const Aw = (flangeWeldLength + webWeldLength) * a;
 
@@ -131,6 +160,11 @@ export function solveWelds(config: ConnectionConfig): {
             utilization,
             capacity: f_vw_d,
             demand: stress_eq
+        },
+        dim: {
+            width: b,
+            height: h,
+            thickness: a
         }
     };
 }
