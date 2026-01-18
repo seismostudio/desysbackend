@@ -78,17 +78,17 @@ const SceneContent: React.FC<ConnectionViewerProps> = ({ config, results, stress
                         color="#718096"
                     />
 
-                    {/* Weld (along +X axis) */}
+                    {/* Flange Weld (along +X axis) */}
                     <FlangeWeld
-                        config={config.welds}
+                        config={config}
                         dimensions={config.beam}
-                        position={[tp + config.welds.size, 0, -config.beam.width / 2]}
+                        position={[tp, 0, -config.beam.width / 2]}
                         rotation={[0, 0, Math.PI / 2]}
                         color="#537be8"
                     />
                     {/* Web Weld (along +X axis) */}
                     <WebWeld
-                        config={config.welds}
+                        config={config}
                         dimensions={config.beam}
                         position={[tp, config.beam.depth / 2 - config.beam.flangeThickness, 0]}
                         rotation={[Math.PI / 2, 0, 0]}
@@ -99,7 +99,7 @@ const SceneContent: React.FC<ConnectionViewerProps> = ({ config, results, stress
                         <>
                             {/* Web Haunched Weld (along +X axis) */}
                             <WebHaunchedWeld
-                                config={config.welds}
+                                config={config}
                                 dimensions={config.beam}
                                 haunchedConfig={config.haunch}
                                 position={[tp, -config.beam.depth / 2, 0]}
@@ -109,7 +109,7 @@ const SceneContent: React.FC<ConnectionViewerProps> = ({ config, results, stress
 
                             {/* Flange Haunched Weld (along +X axis) */}
                             <FlangeHaunchedWeld
-                                config={config.welds}
+                                config={config}
                                 dimensions={config.beam}
                                 haunchedConfig={config.haunch}
                                 position={[tp, -config.beam.depth / 2, -config.haunch.flangeWidth / 2]}

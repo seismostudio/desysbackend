@@ -43,12 +43,49 @@ export function solveWelds(config: ConnectionConfig): {
     // - 4 Flange welds (top/bottom, outer only for simplification) -> width b
     // - 2 Web welds (both sides) -> height (h - 2*tf)
 
-    let hw = 0
+    // Weld lengths on main beam
+    let w1 = 0  // web left
+    let w2 = 0  // web right
+    if (config.welds.webWeld) {
+        w1 = h - 2 * tf;
+        w2 = b - 2 * tf;
+    }
+
+    let w3 = 0  // flange top outer
+    let w4 = 0  // flange bottom outer
+    if (config.welds.outerFlangeWeld) {
+        w3 = b;
+        w4 = b;
+    }
+
+    let w5 = 0;          // flange top inner
+    let w6 = 0;          // flange bottom inner
+    if (config.welds.innerFlangeWeld) {
+        w5 = b - tw;
+        w6 = b - tw;
+    }
+
+
+    // Weld lengths on haunch
+    let w7 = 0;         // haunch web right
+    let w8 = 0;         // haunch web left                 
+    if (config.welds.haunchWebWeld && config.haunch.enabled) {
+        w7 = config.haunch.depth;
+        w8 = config.haunch.depth;
+    }
+
+    let w9 = 0;         // haunch flange bottom inner
+    if (config.welds.haunchFlangeWeld && config.haunch.enabled) {
+        w9 = config.haunch.flangeWidth - tw;
+    }
+
+
+    let webWeldLength = 0
 
     if (!config.haunch.enabled) {
-        hw = (h - 2 * tf); // weld height in beam
+        webWeldLength = w1 + w2;
     } else {
-        hw = (h - 2 * tf) + (config.haunch.depth - config.haunch.flangeThickness); // weld height in haunched beam
+        webWeldLength = w1 + w2 + w7 + w8;
     }
 
     // const hw = h - 2 * tf;
@@ -58,27 +95,72 @@ export function solveWelds(config: ConnectionConfig): {
     let flangeWeldLength = 0;
 
     if (!config.haunch.enabled) {
-        flangeWeldLength = (2 * b) + (2 * (b - tw)); // Top outer & inner + Bottom outer & inner
+        flangeWeldLength = w3 + w4 + w5 + w6; // Top outer & inner + Bottom outer & inner
     } else {
-        flangeWeldLength = (2 * b) + (2 * (b - tw)) + ((config.haunch.flangeWidth - tw)); // Top outer & inner + Bottom outer & inner + Haunch flange
+        flangeWeldLength = w3 + w4 + w5 + w6 + w9; // Top outer & inner + Bottom outer & inner + Haunch flange
     }
+
+    // Moment of inertia of each weld in main beam on Z axis 
+    const i1z = 1 / 12 * a * Math.pow(w1, 3); // web left
+    const i2z = 1 / 12 * a * Math.pow(w2, 3); // web right
+    const i3z = w3 * a * Math.pow(h / 2, 2); // flange top outer
+    const i4z = w4 * a * Math.pow(h / 2, 2); // flange bottom outer
+    const i5z = w5 * a * Math.pow(h / 2 - tf, 2); // flange top inner
+    const i6z = w6 * a * Math.pow(h / 2 - tf, 2); // flange bottom inner
+
+    // Moment of inertia of each weld on haunch
+    const i7z = 1 / 12 * a * Math.pow((h / 2) + (w7 / 2), 3); // haunch web right
+    const i8z = 1 / 12 * a * Math.pow((h / 2) + (w8 / 2), 3); // haunch web left
+    const i9z = w9 * a * Math.pow((h / 2) + (config.haunch.depth), 2); // haunch flange bottom inner
+
+
+    // Moment of inertia of each weld in main beam on Y axis 
+    const i1y = w1 * a * Math.pow(tw / 2, 2); // web left
+    const i2y = w2 * a * Math.pow(tw / 2, 2); // web right
+    const i3y = 1 / 12 * a * Math.pow(w3, 3); // flange top outer
+    const i4y = 1 / 12 * a * Math.pow(w4, 3); // flange bottom outer
+    const i5y = 1 / 12 * a * Math.pow(w5, 3); // flange top inner
+    const i6y = 1 / 12 * a * Math.pow(w6, 3); // flange bottom inner
+
+    // Moment of inertia of each weld on haunch
+    const i7y = w7 * a * Math.pow(tw / 2, 2); // haunch web right
+    const i8y = w8 * a * Math.pow(tw / 2, 2); // haunch web left
+    const i9y = 1 / 12 * a * Math.pow(w9, 3); // haunch flange bottom inner
 
 
 
     // const flangeWeldLength = (2 * b) + (2 * (b - tw)); // Top outer & inner + Bottom outer & inner
-    const webWeldLength = 2 * hw;
+    // const webWeldLength = 2 * hw;
     const Aw = (flangeWeldLength + webWeldLength) * a;
 
     // Second Moment of Inertia (Iw)
     // I_wz (Strong axis - resisting Mz)
     // Flanges: 2 * (b * a) * (h/2)^2
     // Web: 2 * (1/12 * a * hw^3)
-    const Iwz = (2 * (b * a) * Math.pow(h / 2, 2)) + (2 * (1 / 12 * a * Math.pow(hw, 3)));
+
+    let Iwz = 0
+    if (!config.haunch.enabled) {
+        Iwz = i1z + i2z + i3z + i4z + i5z + i6z     // Only Beam
+    } else {
+        Iwz = i1z + i2z + i3z + i4z + i5z + i6z + i7z + i8z + i9z      // Beam + Haunch
+    }
+
+
+
+    // const Iwz = (2 * (b * a) * Math.pow(h / 2, 2)) + (2 * (1 / 12 * a * Math.pow(hw, 3)));
 
     // I_wy (Weak axis - resisting My)
     // Flanges: 2 * (1/12 * a * b^3)
     // Web: 2 * (hw * a) * (tw/2)^2
-    const Iwy = (2 * (1 / 12 * a * Math.pow(b, 3))) + (2 * (hw * a) * Math.pow(tw / 2, 2));
+
+    let Iwy = 0
+    if (!config.haunch.enabled) {
+        Iwy = i1y + i2y + i3y + i4y + i5y + i6y     // Only Beam
+    } else {
+        Iwy = i1y + i2y + i3y + i4y + i5y + i6y + i7y + i8y + i9y      // Beam + Haunch
+    }
+
+    // const Iwy = (2 * (1 / 12 * a * Math.pow(b, 3))) + (2 * (hw * a) * Math.pow(tw / 2, 2));
 
     // Polar Moment (Ip) for Torsion (Simplified)
     const Ip = Iwz + Iwy;
@@ -127,11 +209,60 @@ export function solveWelds(config: ConnectionConfig): {
     // Stress from Shear (tau_shear)
     // For AISC, shear is often considered separately for web and flange welds.
     // For EC3, a resultant shear is often used.
-    const t_shear_v = Vy / (2 * hw * a); // Shear in web welds due to Vy
-    const t_shear_h = Vz / (2 * b * a); // Shear in flange welds due to Vz (simplified)
+
+    let t_shear_v = 0;
+    let t_shear_h = 0;
+
+    if (!config.haunch.enabled) {
+        if (config.welds.webWeld) {
+            t_shear_v = Vy / ((w1 + w2) * a) // Shear in web (Beam Only) welds due to Vy
+        } else {
+            t_shear_v = 0
+        }
+
+    } else {
+        if (config.welds.haunchWebWeld) {
+            t_shear_v = Vy / ((w1 + w2 + w7 + w8) * a) // Shear in web (Beam + Haunch) welds due to Vy
+        } else {
+            t_shear_v = 0
+        }
+
+    }
+
+    if (!config.haunch.enabled) {
+        if (config.welds.innerFlangeWeld && config.welds.outerFlangeWeld) {
+            t_shear_h = Vz / ((w3 + w4 + w5 + w6) * a) // Shear in web (Beam Only) welds due to Vz
+        } else {
+            t_shear_h = 0
+        }
+
+    } else {
+        if (config.welds.haunchFlangeWeld) {
+            t_shear_h = Vz / ((w3 + w4 + w5 + w6 + w9) * a) // Shear in web (Beam + Haunch) welds due to Vz
+        } else {
+            t_shear_h = 0
+        }
+    }
+
+
+
+    // const t_shear_v = Vy / (2 * hw * a); // Shear in web welds due to Vy
+    // const t_shear_h = Vz / (2 * b * a); // Shear in flange welds due to Vz (simplified)
 
     // Torsional Shear (tau_torsion) at furthest point
-    const r_max = Math.sqrt(Math.pow(h / 2, 2) + Math.pow(b / 2, 2));
+
+    let r_max = 0
+    if (!config.haunch.enabled) {
+        r_max = Math.sqrt(Math.pow(h / 2, 2) + Math.pow(b / 2, 2))
+    } else {
+        r_max = Math.sqrt(Math.pow((h / 2) + config.haunch.depth, 2) + Math.pow(b / 2, 2))
+    }
+
+
+
+    // const r_max = Math.sqrt(Math.pow(h / 2, 2) + Math.pow(b / 2, 2));
+
+
     const t_torsion = (Mx * r_max) / Ip;
 
     // Equivalent Stress (Resultant tau)

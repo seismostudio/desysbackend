@@ -217,6 +217,64 @@ export const InputPanel: React.FC<InputPanelProps> = ({ config, updateConfig, on
                             <NumberInput label="Col Spacing" value={config.bolts.colSpacing} onChange={(v) => updateConfig('bolts', 'colSpacing', v)} unit="mm" />
                         </div>
                     </CollapsibleSection>
+
+                    
+
+                    <CollapsibleSection title="Welds">
+                        <div className="p-2 grid grid-cols-1 gap-2">
+                            <NumberInput label="Thickness" value={config.welds.size} onChange={(v) => updateConfig('welds', 'size', v)} unit="mm" />  
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="label-dark-theme">Web Weld</span>
+                                <button
+                                    onClick={() => updateConfig('welds', 'webWeld', !config.welds.webWeld)}
+                                    className={`w-8 h-4 rounded-full relative transition-all duration-200 ${config.welds.webWeld ? 'bg-blue-600' : 'bg-gray-500'}`}
+                                >
+                                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-200 ${config.welds.webWeld ? 'left-4.5' : 'left-0.5'}`} />
+                                </button>
+                            </div>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="label-dark-theme">Outer Flange Weld</span>
+                                <button
+                                    onClick={() => updateConfig('welds', 'outerFlangeWeld', !config.welds.outerFlangeWeld)}
+                                    className={`w-8 h-4 rounded-full relative transition-all duration-200 ${config.welds.outerFlangeWeld ? 'bg-blue-600' : 'bg-gray-500'}`}
+                                >
+                                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-200 ${config.welds.outerFlangeWeld ? 'left-4.5' : 'left-0.5'}`} />
+                                </button>
+                            </div>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="label-dark-theme">Inner Flange Weld</span>
+                                <button
+                                    onClick={() => updateConfig('welds', 'innerFlangeWeld', !config.welds.innerFlangeWeld)}
+                                    className={`w-8 h-4 rounded-full relative transition-all duration-200 ${config.welds.innerFlangeWeld ? 'bg-blue-600' : 'bg-gray-500'}`}
+                                >
+                                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-200 ${config.welds.innerFlangeWeld ? 'left-4.5' : 'left-0.5'}`} />
+                                </button>
+                            </div>
+                            {config.haunch.enabled && 
+                                <>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="label-dark-theme">Haunch Web Weld</span>
+                                        <button
+                                            onClick={() => updateConfig('welds', 'haunchWebWeld', !config.welds.haunchWebWeld)}
+                                            className={`w-8 h-4 rounded-full relative transition-all duration-200 ${config.welds.haunchWebWeld ? 'bg-blue-600' : 'bg-gray-500'}`}
+                                        >
+                                            <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-200 ${config.welds.haunchWebWeld ? 'left-4.5' : 'left-0.5'}`} />
+                                        </button>
+                                    </div>       
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="label-dark-theme">Haunch Flange Weld</span>
+                                        <button
+                                            onClick={() => updateConfig('welds', 'haunchFlangeWeld', !config.welds.haunchFlangeWeld)}
+                                            className={`w-8 h-4 rounded-full relative transition-all duration-200 ${config.welds.haunchFlangeWeld ? 'bg-blue-600' : 'bg-gray-500'}`}
+                                        >
+                                            <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-200 ${config.welds.haunchFlangeWeld ? 'left-4.5' : 'left-0.5'}`} />
+                                        </button>
+                                    </div>            
+                                </>         
+                            }
+
+                        </div>
+                    </CollapsibleSection>
                 </div>
 
                 {/* <div className="p-4 md:mb-0 mb-12 border-t border-gray-700 bg-dark-theme/50">

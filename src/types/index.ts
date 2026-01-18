@@ -34,6 +34,11 @@ export interface WeldConfig {
     enabled: boolean;
     size: number; // Throat thickness
     weldType: 'fillet' | 'butt';
+    webWeld: boolean;
+    outerFlangeWeld: boolean;
+    innerFlangeWeld: boolean;
+    haunchWebWeld : boolean;
+    haunchFlangeWeld : boolean;
 }
 
 // Global Configuration
@@ -222,7 +227,16 @@ export const DEFAULT_CONFIG: ConnectionConfig = {
         edgeDistanceX: 20,
         edgeDistanceY: 20
     },
-    welds: { enabled: true, size: 8, weldType: 'fillet' },
+    welds: { 
+        enabled: true, 
+        size: 8, 
+        weldType: 'fillet',
+        webWeld: true,
+        outerFlangeWeld: true,
+        innerFlangeWeld: true,
+        haunchWebWeld: false,
+        haunchFlangeWeld: false,
+    },
     loads: { axial: 0, shearY: 100, shearZ: 0, momentX: 0, momentY: 0, momentZ: 100 },
     haunch: {
         enabled: false,
