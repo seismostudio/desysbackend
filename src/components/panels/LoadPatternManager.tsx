@@ -78,6 +78,7 @@ export function LoadPatternManager({ patterns, onAdd, onUpdate, onDelete }: Load
                         <tr>
                             <th className="text-left px-3 py-2 font-semibold">Name</th>
                             <th className="text-left px-3 py-2 font-semibold">Type</th>
+                            <th className="text-center px-3 py-2 font-semibold">Self Weight</th>
                             <th className="text-center px-3 py-2 font-semibold w-20">Actions</th>
                         </tr>
                     </thead>
@@ -147,6 +148,15 @@ function PatternRow({
                         {pattern.type}
                     </span>
                 </td>
+                <td className="px-3 py-2 text-center">
+                    {pattern.selfWeight ? (
+                        <span className="px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-[10px] font-medium border border-gray-300">
+                            Included
+                        </span>
+                    ) : (
+                        <span className="text-gray-400 text-[10px]">-</span>
+                    )}
+                </td>
                 <td className="px-3 py-2">
                     <div className="flex items-center justify-center gap-1">
                         <button
@@ -171,11 +181,11 @@ function PatternRow({
 
     return (
         <tr className="border-b bg-yellow-50">
-            <td className="px-3 py-2" colSpan={3}>
+            <td className="px-3 py-2" colSpan={4}>
                 <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                        <div>
-                            <label className="text-[10px] text-gray-600">Pattern Name</label>
+                    <div className="grid grid-cols-12 gap-3 items-end">
+                        <div className="col-span-4">
+                            <label className="text-[10px] text-gray-600 block mb-1">Pattern Name</label>
                             <input
                                 type="text"
                                 value={pattern.name}
@@ -183,8 +193,8 @@ function PatternRow({
                                 className="w-full px-2 py-1 border rounded text-xs"
                             />
                         </div>
-                        <div>
-                            <label className="text-[10px] text-gray-600">Type</label>
+                        <div className="col-span-4">
+                            <label className="text-[10px] text-gray-600 block mb-1">Type</label>
                             <select
                                 value={pattern.type}
                                 onChange={(e) => onChange?.({ ...pattern, type: e.target.value as LoadPatternType })}
@@ -196,6 +206,17 @@ function PatternRow({
                                 <option value="Wind">Wind Load</option>
                                 <option value="Earthquake">Earthquake</option>
                             </select>
+                        </div>
+                        <div className="col-span-3 pb-1">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={pattern.selfWeight || false}
+                                    onChange={(e) => onChange?.({ ...pattern, selfWeight: e.target.checked })}
+                                    className="w-3.5 h-3.5 accent-blue-600 rounded"
+                                />
+                                <span className="text-xs text-gray-700 font-medium">Include Self Weight</span>
+                            </label>
                         </div>
                     </div>
 

@@ -157,6 +157,52 @@ export function analyzeStructure(
 
             const scale = patternCase.scale;
 
+            // Self Weight Calculation (Gravity Load)
+            if (pattern.selfWeight) {
+                const GRAVITY = 9.81; // m/s²
+
+                solverFrames.forEach(frame => {
+                    // Start and end node indices in solverJoints
+                    const startNodeIdx = solverJoints.findIndex(j => j.id === frame.jointI);
+                    const endNodeIdx = solverJoints.findIndex(j => j.id === frame.jointJ);
+
+                    if (startNodeIdx === -1 || endNodeIdx === -1) return;
+
+                    const section = model.frameSections.find(s => s.id === frame.sectionId);
+                    const material = section ? model.materials.find((m) => m.id === section.materialId) : null;
+
+                    if (section && material) {
+                        // Calculate weight per unit length
+                        // density (kg/m³) * Area (m²) * g (m/s²) = N/m
+                        const w = material.density * section.properties.A * GRAVITY;
+
+                        // Length of this SEGMENT (solverFrame)
+                        const startJoint = solverJoints[startNodeIdx];
+                        const endJoint = solverJoints[endNodeIdx];
+                        const L = Math.sqrt(
+                            (endJoint.x - startJoint.x) ** 2 +
+                            (endJoint.y - startJoint.y) ** 2 +
+                            (endJoint.z - startJoint.z) ** 2
+                        );
+
+                        // Total weight of segment
+                        const totalWeight = w * L; // Newtons
+
+                        // Distribute half to each node (Lumped Mass approach)
+                        // Apply in GLOBAL Y direction (Gravity acts down, -Y)
+                        // Confirmed by user and sample data that Y is vertical axis.
+
+                        const nodalLoad = (totalWeight / 2) * scale;
+
+                        // Add to Global Force Vector F
+                        // DOF index for Y is 1 (ux=0, uy=1, uz=2)
+
+                        F[getDofIndex(startNodeIdx, 1)] -= nodalLoad;
+                        F[getDofIndex(endNodeIdx, 1)] -= nodalLoad;
+                    }
+                });
+            }
+
             // Point Loads
             for (const load of model.pointLoads) {
                 if (load.patternId !== pattern.id) continue;

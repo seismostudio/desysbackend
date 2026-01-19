@@ -376,7 +376,7 @@ function App() {
             <img src="/Logo.png" alt="Logo" className="w-10 h-10" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-xl font-bold text-white">DESD</h1>
+            <h1 className="text-xl font-bold text-white">DE-Sys</h1>
             <span className="text-xs text-gray-400">
               3D Structural Analysis | by{' '}
               <a href="https://daharengineer.com" target="_blank" rel="noopener noreferrer">

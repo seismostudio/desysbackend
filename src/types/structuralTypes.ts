@@ -119,6 +119,7 @@ export interface LoadPattern {
   id: string;
   name: string;
   type: LoadPatternType;
+  selfWeight?: boolean;
 }
 
 export interface LoadCasePattern {

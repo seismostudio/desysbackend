@@ -161,17 +161,17 @@ export const SAMPLE_SHELLS: Shell[] = [
 // Sample Loads
 export const SAMPLE_POINT_LOADS = [
     // Gravity loads on roof level
-    { id: 'pl-1', jointId: 5, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-2', jointId: 6, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-3', jointId: 7, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-4', jointId: 8, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-5', jointId: 6, patternId: 'pat-dead', fx: 0, fy: 0, fz: 20, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-6', jointId: 10, patternId: 'pat-dead', fx: 0, fy: -20, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-7', jointId: 9, patternId: 'pat-dead', fx: 0, fy: -20, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-8', jointId: 11, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-9', jointId: 12, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-10', jointId: 13, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-11', jointId: 14, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-1', jointId: 5, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-2', jointId: 6, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-3', jointId: 7, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-4', jointId: 8, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-5', jointId: 6, patternId: 'pat-dead', fx: 0, fy: 0, fz: 20, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-6', jointId: 10, patternId: 'pat-dead', fx: 0, fy: -20, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-7', jointId: 9, patternId: 'pat-dead', fx: 0, fy: -20, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-8', jointId: 11, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-9', jointId: 12, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-10', jointId: 13, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-11', jointId: 14, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
 ];
 
 export const INITIAL_TEMPLATE_MODEL: StructuralModel = {
