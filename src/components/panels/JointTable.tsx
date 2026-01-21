@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Joint } from '../../types/structuralTypes';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, Pencil } from 'lucide-react';
 
 interface JointTableProps {
     joints: Joint[];
@@ -46,7 +46,7 @@ export function JointTable({ joints, onAdd, onUpdate, onDelete, selectedJointId,
     return (
         <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-xs uppercase tracking-wider text-gray-700">Joints</h4>
+                <h4 className="font-semibold text-xs uppercase tracking-wider text-white">Joints</h4>
                 <button
                     onClick={handleAddJoint}
                     className="flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-medium transition-colors"
@@ -56,15 +56,15 @@ export function JointTable({ joints, onAdd, onUpdate, onDelete, selectedJointId,
                 </button>
             </div>
 
-            <div className="border rounded-lg overflow-hidden bg-white max-h-60 overflow-y-auto">
+            <div className="border rounded-lg overflow-hidden bg-gray-800 h-fit overflow-y-auto no-scrollbar">
                 <table className="w-full text-[10px]">
-                    <thead className="bg-gray-100 border-b sticky top-0">
+                    <thead className="bg-gray-700 border-b sticky top-0">
                         <tr>
-                            <th className="text-left px-2 py-1 font-semibold">ID</th>
-                            <th className="text-right px-2 py-1 font-semibold">X (m)</th>
-                            <th className="text-right px-2 py-1 font-semibold">Y (m)</th>
-                            <th className="text-right px-2 py-1 font-semibold">Z (m)</th>
-                            <th className="text-center px-2 py-1 font-semibold w-12">Actions</th>
+                            <th className="text-left px-2 py-1 font-semibold text-white">ID</th>
+                            <th className="text-right px-2 py-1 font-semibold text-white">X (m)</th>
+                            <th className="text-right px-2 py-1 font-semibold text-white">Y (m)</th>
+                            <th className="text-right px-2 py-1 font-semibold text-white">Z (m)</th>
+                            <th className="text-center px-2 py-1 font-semibold w-12 text-white">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -76,11 +76,11 @@ export function JointTable({ joints, onAdd, onUpdate, onDelete, selectedJointId,
                             return (
                                 <tr
                                     key={joint.id}
-                                    className={`border-b hover:bg-gray-50 cursor-pointer ${isSelected ? 'bg-blue-100' : ''} ${isEditing ? 'bg-green-50' : ''}`}
+                                    className={`border-b hover:bg-gray-50 cursor-pointer ${isSelected ? 'bg-gray-700' : ''} ${isEditing ? 'bg-gray-700' : ''}`}
                                     onClick={() => !isEditing && onSelectJoint(joint.id)}
                                 >
-                                    <td className="px-2 py-1 font-medium">{joint.id}</td>
-                                    <td className="px-2 py-1 text-right">
+                                    <td className="px-2 py-1 font-medium text-white">{joint.id}</td>
+                                    <td className="px-2 py-1 text-right text-white">
                                         {isEditing ? (
                                             <input
                                                 type="number"
@@ -94,7 +94,7 @@ export function JointTable({ joints, onAdd, onUpdate, onDelete, selectedJointId,
                                             displayJoint.x.toFixed(2)
                                         )}
                                     </td>
-                                    <td className="px-2 py-1 text-right">
+                                    <td className="px-2 py-1 text-right text-white">
                                         {isEditing ? (
                                             <input
                                                 type="number"
@@ -108,7 +108,7 @@ export function JointTable({ joints, onAdd, onUpdate, onDelete, selectedJointId,
                                             displayJoint.y.toFixed(2)
                                         )}
                                     </td>
-                                    <td className="px-2 py-1 text-right">
+                                    <td className="px-2 py-1 text-right text-white">
                                         {isEditing ? (
                                             <input
                                                 type="number"
@@ -122,18 +122,18 @@ export function JointTable({ joints, onAdd, onUpdate, onDelete, selectedJointId,
                                             displayJoint.z.toFixed(2)
                                         )}
                                     </td>
-                                    <td className="px-2 py-1" onClick={(e) => e.stopPropagation()}>
+                                    <td className="px-2 py-1 text-white" onClick={(e) => e.stopPropagation()}>
                                         {isEditing ? (
                                             <div className="flex items-center justify-center gap-1">
                                                 <button
                                                     onClick={saveEdit}
-                                                    className="px-1.5 py-0.5 bg-green-600 hover:bg-green-700 text-white rounded text-[9px]"
+                                                    className="cursor-pointer px-1.5 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-[9px]"
                                                 >
                                                     Save
                                                 </button>
                                                 <button
                                                     onClick={cancelEdit}
-                                                    className="px-1.5 py-0.5 bg-gray-400 hover:bg-gray-500 text-white rounded text-[9px]"
+                                                    className="cursor-pointer px-1.5 py-0.5 bg-gray-400 hover:bg-gray-500 text-white rounded text-[9px]"
                                                 >
                                                     Cancel
                                                 </button>
@@ -145,16 +145,18 @@ export function JointTable({ joints, onAdd, onUpdate, onDelete, selectedJointId,
                                                         e.stopPropagation();
                                                         startEdit(joint);
                                                     }}
-                                                    className="px-1.5 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-[9px]"
+                                                    title="Edit"
+                                                    className="p-0.5 cursor-pointer hover:bg-blue-700 rounded text-white"
                                                 >
-                                                    Edit
+                                                    <Pencil className="w-3 h-3" />
                                                 </button>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         onDelete(joint.id);
                                                     }}
-                                                    className="p-0.5 hover:bg-red-100 rounded text-red-600"
+                                                    title="Delete"
+                                                    className="p-0.5 cursor-pointer hover:bg-red-100 rounded text-white"
                                                 >
                                                     <Trash2 className="w-3 h-3" />
                                                 </button>

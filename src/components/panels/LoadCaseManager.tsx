@@ -72,11 +72,11 @@ export function LoadCaseManager({ cases, patterns, onAdd, onUpdate, onDelete }: 
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <h3 className="font-bold text-sm uppercase tracking-wider text-gray-700">Load Cases</h3>
+                <h3 className="font-bold text-sm uppercase tracking-wider text-white">Load Cases</h3>
                 <button
                     onClick={startCreate}
                     disabled={creating || editing !== null || patterns.length === 0}
-                    className="flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
+                    className="cursor-pointer flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
                 >
                     <Plus className="w-3 h-3" />
                     Add Load Case
@@ -84,18 +84,18 @@ export function LoadCaseManager({ cases, patterns, onAdd, onUpdate, onDelete }: 
             </div>
 
             {patterns.length === 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-xs text-yellow-800">
+                <div className="rounded p-3 text-xs text-white">
                     Please create at least one load pattern before adding load cases.
                 </div>
             )}
 
-            <div className="border rounded-lg overflow-hidden bg-white">
+            <div className="border rounded-lg overflow-hidden bg-gray-800">
                 <table className="w-full text-xs">
-                    <thead className="bg-gray-100 border-b">
+                    <thead className="bg-gray-700 border-b">
                         <tr>
-                            <th className="text-left px-3 py-2 font-semibold">Name</th>
-                            <th className="text-left px-3 py-2 font-semibold">Patterns</th>
-                            <th className="text-center px-3 py-2 font-semibold w-20">Actions</th>
+                            <th className="text-left px-3 py-2 font-semibold text-white">Name</th>
+                            <th className="text-left px-3 py-2 font-semibold text-white">Patterns</th>
+                            <th className="text-center px-3 py-2 font-semibold w-20 text-white">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -170,7 +170,7 @@ function LoadCaseRow({
     if (!isEditing) {
         return (
             <tr className="border-b hover:bg-gray-50">
-                <td className="px-3 py-2">{loadCase.name}</td>
+                <td className="px-3 py-2 text-white">{loadCase.name}</td>
                 <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-1">
                         {loadCase.patterns.map((cp, idx) => {
@@ -184,11 +184,11 @@ function LoadCaseRow({
                     </div>
                 </td>
                 <td className="px-3 py-2">
-                    <div className="flex items-center justify-center gap-1">
-                        <button onClick={onEdit} className="p-1 hover:bg-blue-100 rounded text-blue-600" title="Edit">
+                    <div className="flex items-center justify-center gap-1 text-white">
+                        <button onClick={onEdit} className="cursor-pointer p-1 hover:bg-blue-100 rounded" title="Edit">
                             <Edit2 className="w-3 h-3" />
                         </button>
-                        <button onClick={onDelete} className="p-1 hover:bg-red-100 rounded text-red-600" title="Delete">
+                        <button onClick={onDelete} className="cursor-pointer p-1 hover:bg-red-100 rounded" title="Delete">
                             <Trash2 className="w-3 h-3" />
                         </button>
                     </div>
@@ -198,28 +198,29 @@ function LoadCaseRow({
     }
 
     return (
-        <tr className="border-b bg-orange-50">
+        <tr className="border-b">
             <td className="px-3 py-2" colSpan={3}>
-                <div className="space-y-2">
+                <div className="space-y-2 text-white">
                     <div>
-                        <label className="text-[10px] text-gray-600">Load Case Name</label>
+                        <label className="text-[10px]">Load Case Name</label>
                         <input
                             type="text"
                             value={loadCase.name}
                             onChange={(e) => onChange?.({ ...loadCase, name: e.target.value })}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
 
                     <div>
                         <div className="flex items-center justify-between mb-1">
-                            <label className="text-[10px] text-gray-600 font-semibold">Patterns</label>
+                            <label className="text-[10px] font-semibold">Patterns</label>
                             <button
                                 onClick={onAddPattern}
-                                className="flex items-center gap-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[10px]"
+                                title="Add Pattern"
+                                className="cursor-pointer flex items-center gap-1 px-1 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[10px]"
                             >
                                 <Plus className="w-3 h-3" />
-                                Add Pattern
+
                             </button>
                         </div>
 
@@ -229,27 +230,28 @@ function LoadCaseRow({
                                     <select
                                         value={cp.patternId}
                                         onChange={(e) => onUpdatePattern?.(idx, 'patternId', e.target.value)}
-                                        className="flex-1 px-2 py-1 border rounded text-xs"
+                                        className="input"
                                     >
                                         {patterns.map((p) => (
-                                            <option key={p.id} value={p.id}>
+                                            <option className="text-gray-600" key={p.id} value={p.id}>
                                                 {p.name}
                                             </option>
                                         ))}
                                     </select>
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[10px] text-gray-600">×</span>
+                                        <span className="text-[10px] text-white">×</span>
                                         <input
                                             type="number"
                                             step="0.1"
                                             value={cp.scale}
                                             onChange={(e) => onUpdatePattern?.(idx, 'scale', Number(e.target.value))}
-                                            className="w-20 px-2 py-1 border rounded text-xs"
+                                            className="input"
                                         />
                                     </div>
                                     <button
                                         onClick={() => onRemovePattern?.(idx)}
-                                        className="p-1 hover:bg-red-100 rounded text-red-600"
+                                        title="Remove Pattern"
+                                        className="p-1 hover:bg-red-100 rounded cursor-pointer text-white"
                                     >
                                         <X className="w-3 h-3" />
                                     </button>
@@ -259,10 +261,10 @@ function LoadCaseRow({
                     </div>
 
                     <div className="flex gap-2">
-                        <button onClick={onSave} className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium">
+                        <button onClick={onSave} className="cursor-pointer px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium">
                             Save
                         </button>
-                        <button onClick={onCancel} className="px-3 py-1 bg-gray-400 hover:bg-gray-500 text-white rounded text-xs font-medium">
+                        <button onClick={onCancel} className="cursor-pointer px-3 py-1 bg-gray-400 hover:bg-gray-500 text-white rounded text-xs font-medium">
                             Cancel
                         </button>
                     </div>

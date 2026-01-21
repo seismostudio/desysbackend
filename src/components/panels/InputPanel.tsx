@@ -1,326 +1,380 @@
 import React, { useState } from 'react';
+import { MaterialManager } from './MaterialManager';
+import { FrameSectionManager } from './FrameSectionManager';
+import { ShellSectionManager } from './ShellSectionManager';
+import { LoadPatternManager } from './LoadPatternManager';
+import { LoadCaseManager } from './LoadCaseManager';
+import { LoadCombinationManager } from './LoadCombinationManager';
+import { LoadApplicationPanel } from './LoadApplicationPanel';
+import { JointTable } from './JointTable';
+import { FrameTable } from './FrameTable';
+import { ShellTable } from './ShellTable';
+import { ResultsPanel } from './ResultsPanel';
 import {
-    PanelLeftOpen,
-    Settings,
-    ChevronDown,
-    ChevronRight,
-    Play,
-    Loader2
-} from 'lucide-react';
-import type { ConnectionConfig, AnalysisResult } from '../../types';
-import { ALL_PROFILES } from '../../data/profiles';
+    type StructuralModel,
+    type UIState,
+    type Material,
+    type FrameSection,
+    type ShellSection,
+    type LoadPattern,
+    type LoadCase,
+    type LoadCombination,
+    type Joint,
+    type PointLoad,
+    type DistributedFrameLoad,
+    type AreaLoad,
+    type AnalysisResults,
+} from '../../types/structuralTypes';
+import { PanelLeftOpen, Settings } from 'lucide-react';
 
 interface InputPanelProps {
-    config: ConnectionConfig;
-    updateConfig: (section: keyof ConnectionConfig, key: string, value: any) => void;
-    onRunAnalysis: () => void;
+    activeTab: 'materials' | 'sections' | 'loads' | 'loadApp' | 'model' | 'results';
+    setActiveTab: (tab: 'materials' | 'sections' | 'loads' | 'loadApp' | 'model' | 'results') => void;
+    model: StructuralModel;
+    uiState: UIState;
+    setUIState: React.Dispatch<React.SetStateAction<UIState>>;
+    modelTab: 'joints' | 'frames' | 'shells';
+    setModelTab: (tab: 'joints' | 'frames' | 'shells') => void;
+    analysisResults: AnalysisResults | null;
+    analysisResultMap?: Record<string, AnalysisResults> | null;
+    activeResultId?: string | null;
+    onSelectResult?: (id: string) => void;
     isAnalyzing: boolean;
-    analysisResult: AnalysisResult | null;
-    onOpenSettings: () => void;
+
+    // Handlers
+    onAddMaterial: (material: Material) => void;
+    onUpdateMaterial: (id: string, material: Material) => void;
+    onDeleteMaterial: (id: string) => void;
+
+    onAddFrameSection: (section: FrameSection) => void;
+    onUpdateFrameSection: (id: string, section: FrameSection) => void;
+    onDeleteFrameSection: (id: string) => void;
+
+    onAddShellSection: (section: ShellSection) => void;
+    onUpdateShellSection: (id: string, section: ShellSection) => void;
+    onDeleteShellSection: (id: string) => void;
+
+    onAddLoadPattern: (pattern: LoadPattern) => void;
+    onUpdateLoadPattern: (id: string, pattern: LoadPattern) => void;
+    onDeleteLoadPattern: (id: string) => void;
+
+    onAddLoadCase: (loadCase: LoadCase) => void;
+    onUpdateLoadCase: (id: string, loadCase: LoadCase) => void;
+    onDeleteLoadCase: (id: string) => void;
+
+    onAddLoadCombination: (combination: LoadCombination) => void;
+    onUpdateLoadCombination: (id: string, combination: LoadCombination) => void;
+    onDeleteLoadCombination: (id: string) => void;
+
+    onAddPointLoad: (load: PointLoad) => void;
+    onDeletePointLoad: (id: string) => void;
+    onAddDistributedLoad: (load: DistributedFrameLoad) => void;
+    onDeleteDistributedLoad: (id: string) => void;
+    onAddAreaLoad: (load: AreaLoad) => void;
+    onDeleteAreaLoad: (id: string) => void;
+
+    onAddJoint: (joint: Joint) => void;
+    onUpdateJoint: (id: number, joint: Joint) => void;
+    onDeleteJoint: (id: number) => void;
+
+    onDeleteFrame: (id: number) => void;
+    onToggleFrameCreateMode: () => void;
+
+    onDeleteShell: (id: number) => void;
+    onToggleShellCreateMode: () => void;
 }
 
-const NumberInput = ({ label, value, onChange, unit }: { label: string, value: number, onChange: (v: number) => void, unit?: string }) => (
-    <div className="flex flex-col gap-1">
-        <label className="label-dark-theme">{label}</label>
-        <div className="relative">
-            <input
-                type="number"
-                value={value}
-                onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-                className="input-dark-theme"
-            />
-            {unit && <span className="absolute right-2 top-1.5 text-xs text-gray-400">{unit}</span>}
-        </div>
-    </div>
-);
-
-const CollapsibleSection = ({ title, children, defaultOpen = false }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
-    return (
-        <div className="bg-dark-theme">
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full p-2 transition-colors cursor-pointer flex items-center justify-between group"
-            >
-                <span className="title2-dark-theme">{title}</span>
-                {isOpen ? (
-                    <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                ) : (
-                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                )}
-            </button>
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                {children}
-            </div>
-        </div>
-    );
-};
-
-export const InputPanel: React.FC<InputPanelProps> = ({ config, updateConfig, onRunAnalysis, isAnalyzing, onOpenSettings }) => {
-    // export const InputPanel: React.FC<InputPanelProps> = ({ config, updateConfig, onRunAnalysis, isAnalyzing, analysisResult, onOpenSettings }) => {
+export const InputPanel: React.FC<InputPanelProps> = ({
+    activeTab,
+    setActiveTab,
+    model,
+    uiState,
+    setUIState,
+    modelTab,
+    setModelTab,
+    analysisResults,
+    analysisResultMap,
+    activeResultId,
+    onSelectResult,
+    isAnalyzing,
+    onAddMaterial,
+    onUpdateMaterial,
+    onDeleteMaterial,
+    onAddFrameSection,
+    onUpdateFrameSection,
+    onDeleteFrameSection,
+    onAddShellSection,
+    onUpdateShellSection,
+    onDeleteShellSection,
+    onAddLoadPattern,
+    onUpdateLoadPattern,
+    onDeleteLoadPattern,
+    onAddLoadCase,
+    onUpdateLoadCase,
+    onDeleteLoadCase,
+    onAddLoadCombination,
+    onUpdateLoadCombination,
+    onDeleteLoadCombination,
+    onAddPointLoad,
+    onDeletePointLoad,
+    onAddDistributedLoad,
+    onDeleteDistributedLoad,
+    onAddAreaLoad,
+    onDeleteAreaLoad,
+    onAddJoint,
+    onUpdateJoint,
+    onDeleteJoint,
+    onDeleteFrame,
+    onToggleFrameCreateMode,
+    onDeleteShell,
+    onToggleShellCreateMode,
+}) => {
     const [isPanelOpen, setIsPanelOpen] = useState(true);
-
-    const handleProfileChange = (section: 'beam' | 'column', profileName: string) => {
-        const profile = ALL_PROFILES.find(p => p.name === profileName);
-        if (profile) {
-            updateConfig(section, '', {
-                ...config[section],
-                name: profile.name,
-                depth: profile.depth,
-                width: profile.width,
-                webThickness: profile.webThickness,
-                flangeThickness: profile.flangeThickness,
-                isUserDefined: false
-            });
-        }
-    };
-
-    const ProfileInputs = ({ section }: { section: 'beam' | 'column' }) => {
-        const dim = config[section];
-        return (
-            <div className="p-2 flex flex-col gap-2">
-                <div className="flex items-center justify-between bg-gray-700/30 p-2 rounded-md border border-gray-600/30">
-                    <span className="label-dark-theme">User Defined</span>
-                    <button
-                        onClick={() => updateConfig(section, 'isUserDefined', !dim.isUserDefined)}
-                        className={`w-8 h-4 rounded-full relative transition-all duration-200 ${dim.isUserDefined ? 'bg-blue-600' : 'bg-gray-500'}`}
-                    >
-                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-200 ${dim.isUserDefined ? 'left-4.5' : 'left-0.5'}`} />
-                    </button>
-                </div>
-
-                {!dim.isUserDefined ? (
-                    <div className="flex flex-col gap-1">
-                        <label className="label-dark-theme">Select Profile</label>
-                        <select
-                            value={dim.name || ""}
-                            onChange={(e) => handleProfileChange(section, e.target.value)}
-                            className="input-dark-theme bg-gray-700"
-                        >
-                            <option value="" disabled>Choose a profile...</option>
-                            {ALL_PROFILES.map(p => (
-                                <option key={p.name} value={p.name}>{p.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                        <NumberInput label="Depth" value={dim.depth} onChange={(v) => updateConfig(section, 'depth', v)} unit="mm" />
-                        <NumberInput label="Width" value={dim.width} onChange={(v) => updateConfig(section, 'width', v)} unit="mm" />
-                        <NumberInput label="Web Thick" value={dim.webThickness} onChange={(v) => updateConfig(section, 'webThickness', v)} unit="mm" />
-                        <NumberInput label="Flange Thick" value={dim.flangeThickness} onChange={(v) => updateConfig(section, 'flangeThickness', v)} unit="mm" />
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     return (
-        <div className="fixed top-[60px] left-0 md:w-[400px] w-[calc(100vw-40px)] h-[94vh] flex shrink-0 z-30 pointer-events-none">
-            {/* Main Panel Content */}
-            <div
-                className={`flex-1 flex flex-col h-full bg-dark-theme transition-transform duration-500 ease-in-out pointer-events-auto border-r border-gray-700 shadow-2xl ${isPanelOpen ? 'translate-x-0' : '-translate-x-full'}`}
-            >
-                <div className="title-dark-theme border-b border-gray-700">
-                    <span>Configuration</span>
-                </div>
-
-                <div className="flex-1 overflow-y-auto no-scrollbar">
-                    <CollapsibleSection title="Loads">
-                        <div className="p-2 grid grid-cols-2 gap-2">
-                            <NumberInput label="Axial (P)" value={config.loads.axial} onChange={(v) => updateConfig('loads', 'axial', v)} unit="kN" />
-                            <NumberInput label="Shear Vy" value={config.loads.shearY} onChange={(v) => updateConfig('loads', 'shearY', v)} unit="kN" />
-                            <NumberInput label="Shear Vz" value={config.loads.shearZ} onChange={(v) => updateConfig('loads', 'shearZ', v)} unit="kN" />
-                            <NumberInput label="Moment Mx" value={config.loads.momentX} onChange={(v) => updateConfig('loads', 'momentX', v)} unit="kNm" />
-                            <NumberInput label="Moment My" value={config.loads.momentY} onChange={(v) => updateConfig('loads', 'momentY', v)} unit="kNm" />
-                            <NumberInput label="Moment Mz" value={config.loads.momentZ} onChange={(v) => updateConfig('loads', 'momentZ', v)} unit="kNm" />
-                        </div>
-                    </CollapsibleSection>
-
-                    <CollapsibleSection title="Beam Profile">
-                        <ProfileInputs section="beam" />
-                    </CollapsibleSection>
-
-                    <CollapsibleSection title="Column Profile">
-                        <div className="flex flex-col">
-                            <ProfileInputs section="column" />
-                            <div className="p-2 pt-0 flex flex-col gap-1">
-                                <label className="label-dark-theme">Orientation</label>
-                                <div className="flex bg-gray-700/50 p-1 rounded-md border border-gray-600/30">
-                                    <button
-                                        onClick={() => updateConfig('columnRotation', '', 0)}
-                                        className={`flex-1 py-1 text-[10px] font-bold rounded transition-all ${config.columnRotation === 0 ? 'bg-white text-gray-800' : 'text-gray-400 hover:text-white'}`}
-                                    > Strong Axis </button>
-                                    <button
-                                        onClick={() => updateConfig('columnRotation', '', 90)}
-                                        className={`flex-1 py-1 text-[10px] font-bold rounded transition-all ${config.columnRotation === 90 ? 'bg-white text-gray-800' : 'text-gray-400 hover:text-white'}`}
-                                    > Weak Axis </button>
-                                </div>
-                            </div>
-                        </div>
-                    </CollapsibleSection>
-
-                    <CollapsibleSection title="End Plate">
-                        <div className="p-2 grid grid-cols-2 gap-2">
-                            <NumberInput label="Height" value={config.plate.height} onChange={(v) => updateConfig('plate', 'height', v)} unit="mm" />
-                            <NumberInput label="Width" value={config.plate.width} onChange={(v) => updateConfig('plate', 'width', v)} unit="mm" />
-                            <NumberInput label="Thickness" value={config.plate.thickness} onChange={(v) => updateConfig('plate', 'thickness', v)} unit="mm" />
-                        </div>
-                    </CollapsibleSection>
-
-                    <div className="bg-dark-theme border-b border-gray-800/50">
-                        <div className="p-2 flex items-center justify-between">
-                            <span className="title2-dark-theme">Haunch</span>
+        <div className="absolute top-0 h-full overflow-y-auto w-full no-scrollbar flex">
+            <div className={`absolute top-16 left-0 bottom-0 h-[calc(100%-4rem)] w-fit bg-primary shadow-lg rounded-r-lg z-100 flex gap-1 border-b pb-2 transition ${isPanelOpen ? "translate-x-100" : "translate-x-0"}`}>
+                <div className="p-2 py-4 gap-2 flex flex-col items-center">
+                    <PanelLeftOpen
+                        className={`w-6 h-6 text-white cursor-pointer transition ${isPanelOpen ? "" : "rotate-180"}`}
+                        onClick={() => setIsPanelOpen(!isPanelOpen)}
+                    />
+                    <div className='flex flex-col justify-between h-full'>
+                        <div className='flex flex-col gap-2'>
                             <button
-                                onClick={() => updateConfig('haunch', 'enabled', !config.haunch.enabled)}
-                                className={`w-10 h-5 rounded-full relative transition-all duration-200 ${config.haunch.enabled ? 'bg-blue-600' : 'bg-gray-500'}`}
+                                onClick={() => setActiveTab('materials')}
+                                className={`cursor-pointer transition p-2 rounded text-xs font-medium 
+                                    ${activeTab === 'materials' ? 'bg-blue-600' : ''}
+                                    ${isPanelOpen ? "translate-y-0 opacity-100" : "-translate-y-100 opacity-0"}
+                                    `}
+                                title="Materials"
                             >
-                                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-200 ${config.haunch.enabled ? 'left-6' : 'left-1'}`} />
+                                <span className="text-sm border-2 border-white text-white rounded-md w-6 h-6 flex items-center justify-center">M</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('sections')}
+                                className={`cursor-pointer transition p-2 rounded text-xs font-medium 
+                                    ${activeTab === 'sections' ? 'bg-blue-600' : ''}
+                                    ${isPanelOpen ? "translate-y-0 opacity-100" : "-translate-y-100 opacity-0"}
+                                    `}
+                                title="Sections"
+                            >
+                                <span className="text-sm border-2 border-white text-white rounded-md w-6 h-6 flex items-center justify-center">S</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('loads')}
+                                className={`cursor-pointer transition p-2 rounded text-xs font-medium 
+                                    ${activeTab === 'loads' ? 'bg-blue-600' : ''}
+                                    ${isPanelOpen ? "translate-y-0 opacity-100" : "-translate-y-100 opacity-0"}
+                                    `}
+                                title="Loads"
+                            >
+                                <span className="text-sm border-2 border-white text-white rounded-md w-6 h-6 flex items-center justify-center">L</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('model')}
+                                className={`cursor-pointer transition p-2 rounded text-xs font-medium 
+                                    ${activeTab === 'model' ? 'bg-blue-600' : ''}
+                                    ${isPanelOpen ? "translate-y-0 opacity-100" : "-translate-y-100 opacity-0"}
+                                    `}
+                                title="Draw"
+                            >
+                                <span className="text-sm border-2 border-white text-white rounded-md w-6 h-6 flex items-center justify-center">D</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('loadApp')}
+                                className={`cursor-pointer transition p-2 rounded text-xs font-medium 
+                                    ${activeTab === 'loadApp' ? 'bg-blue-600' : ''}
+                                    ${isPanelOpen ? "translate-y-0 opacity-100" : "-translate-y-100 opacity-0"}
+                                    `}
+                                title="Load Application"
+                            >
+                                <span className="text-sm border-2 border-white text-white rounded-md w-6 h-6 flex items-center justify-center">LA</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('results')}
+                                className={`cursor-pointer transition p-2 rounded text-xs font-medium 
+                                    ${activeTab === 'results' ? 'bg-blue-600' : ''}
+                                    ${isPanelOpen ? "translate-y-0 opacity-100" : "-translate-y-100 opacity-0"}
+                                    `}
+                                title="Results"
+                            >
+                                <span className="text-sm border-2 border-white text-white rounded-md w-6 h-6 flex items-center justify-center">R</span>
                             </button>
                         </div>
-                        {config.haunch.enabled && (
-                            <div className="p-2 flex flex-col gap-2 border-t border-gray-700/30">
-                                <div className="grid grid-cols-2 gap-2">
-                                    <NumberInput label="Length" value={config.haunch.length} onChange={(v) => updateConfig('haunch', 'length', v)} unit="mm" />
-                                    <NumberInput label="Depth" value={config.haunch.depth} onChange={(v) => updateConfig('haunch', 'depth', v)} unit="mm" />
-                                    <NumberInput label="Web Thick" value={config.haunch.thickness} onChange={(v) => updateConfig('haunch', 'thickness', v)} unit="mm" />
-                                    <NumberInput label="Flange Width" value={config.haunch.flangeWidth} onChange={(v) => updateConfig('haunch', 'flangeWidth', v)} unit="mm" />
-                                    <NumberInput label="Flange Thick" value={config.haunch.flangeThickness} onChange={(v) => updateConfig('haunch', 'flangeThickness', v)} unit="mm" />
-                                </div>
-                                <div className="border-t border-gray-700/30 pt-2">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="label-dark-theme">Haunch Bolts</span>
-                                        <button
-                                            onClick={() => updateConfig('haunch', 'bolts', { ...config.haunch.bolts, enabled: !config.haunch.bolts.enabled })}
-                                            className={`w-8 h-4 rounded-full relative transition-all duration-200 ${config.haunch.bolts.enabled ? 'bg-blue-600' : 'bg-gray-500'}`}
-                                        >
-                                            <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-200 ${config.haunch.bolts.enabled ? 'left-4.5' : 'left-0.5'}`} />
-                                        </button>
-                                    </div>
-                                    {config.haunch.bolts.enabled && (
-                                        <div className="grid grid-cols-2 gap-2 pb-2">
-                                            <NumberInput label="Rows" value={config.haunch.bolts.rows} onChange={(v) => updateConfig('haunch', 'bolts', { ...config.haunch.bolts, rows: v })} unit="" />
-                                            <NumberInput label="Spacing" value={config.haunch.bolts.rowSpacing} onChange={(v) => updateConfig('haunch', 'bolts', { ...config.haunch.bolts, rowSpacing: v })} unit="mm" />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                        <div>
+                            <button
+                                // onClick={() => setActiveTab('results')}
+                                className={`cursor-pointer transition p-2 rounded text-xs font-medium 
+                                    ${activeTab === 'results' ? 'bg-blue-600' : ''}
+                                    ${isPanelOpen ? "translate-y-0 opacity-100" : "-translate-y-100 opacity-0"}
+                                    `}
+                                title="Settings"
+                            >
+                                <Settings className='text-white' />
+                            </button>
+                        </div>
                     </div>
-
-                    <CollapsibleSection title="Bolts">
-                        <div className="p-2 grid grid-cols-2 gap-2">
-                            <NumberInput label="Diameter" value={config.bolts.diameter} onChange={(v) => updateConfig('bolts', 'diameter', v)} unit="mm" />
-                            <NumberInput label="Rows" value={config.bolts.rows} onChange={(v) => updateConfig('bolts', 'rows', v)} />
-                            <NumberInput label="Cols" value={config.bolts.cols} onChange={(v) => updateConfig('bolts', 'cols', v)} />
-                            <NumberInput label="Row Spacing" value={config.bolts.rowSpacing} onChange={(v) => updateConfig('bolts', 'rowSpacing', v)} unit="mm" />
-                            <NumberInput label="Col Spacing" value={config.bolts.colSpacing} onChange={(v) => updateConfig('bolts', 'colSpacing', v)} unit="mm" />
-                        </div>
-                    </CollapsibleSection>
-
-                    
-
-                    <CollapsibleSection title="Welds">
-                        <div className="p-2 grid grid-cols-1 gap-2">
-                            <NumberInput label="Thickness" value={config.welds.size} onChange={(v) => updateConfig('welds', 'size', v)} unit="mm" />  
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="label-dark-theme">Web Weld</span>
-                                <button
-                                    onClick={() => updateConfig('welds', 'webWeld', !config.welds.webWeld)}
-                                    className={`w-8 h-4 rounded-full relative transition-all duration-200 ${config.welds.webWeld ? 'bg-blue-600' : 'bg-gray-500'}`}
-                                >
-                                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-200 ${config.welds.webWeld ? 'left-4.5' : 'left-0.5'}`} />
-                                </button>
-                            </div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="label-dark-theme">Outer Flange Weld</span>
-                                <button
-                                    onClick={() => updateConfig('welds', 'outerFlangeWeld', !config.welds.outerFlangeWeld)}
-                                    className={`w-8 h-4 rounded-full relative transition-all duration-200 ${config.welds.outerFlangeWeld ? 'bg-blue-600' : 'bg-gray-500'}`}
-                                >
-                                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-200 ${config.welds.outerFlangeWeld ? 'left-4.5' : 'left-0.5'}`} />
-                                </button>
-                            </div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="label-dark-theme">Inner Flange Weld</span>
-                                <button
-                                    onClick={() => updateConfig('welds', 'innerFlangeWeld', !config.welds.innerFlangeWeld)}
-                                    className={`w-8 h-4 rounded-full relative transition-all duration-200 ${config.welds.innerFlangeWeld ? 'bg-blue-600' : 'bg-gray-500'}`}
-                                >
-                                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-200 ${config.welds.innerFlangeWeld ? 'left-4.5' : 'left-0.5'}`} />
-                                </button>
-                            </div>
-                            {config.haunch.enabled && 
-                                <>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="label-dark-theme">Haunch Web Weld</span>
-                                        <button
-                                            onClick={() => updateConfig('welds', 'haunchWebWeld', !config.welds.haunchWebWeld)}
-                                            className={`w-8 h-4 rounded-full relative transition-all duration-200 ${config.welds.haunchWebWeld ? 'bg-blue-600' : 'bg-gray-500'}`}
-                                        >
-                                            <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-200 ${config.welds.haunchWebWeld ? 'left-4.5' : 'left-0.5'}`} />
-                                        </button>
-                                    </div>       
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="label-dark-theme">Haunch Flange Weld</span>
-                                        <button
-                                            onClick={() => updateConfig('welds', 'haunchFlangeWeld', !config.welds.haunchFlangeWeld)}
-                                            className={`w-8 h-4 rounded-full relative transition-all duration-200 ${config.welds.haunchFlangeWeld ? 'bg-blue-600' : 'bg-gray-500'}`}
-                                        >
-                                            <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-200 ${config.welds.haunchFlangeWeld ? 'left-4.5' : 'left-0.5'}`} />
-                                        </button>
-                                    </div>            
-                                </>         
-                            }
-
-                        </div>
-                    </CollapsibleSection>
                 </div>
-
-                {/* <div className="p-4 md:mb-0 mb-12 border-t border-gray-700 bg-dark-theme/50">
-                    <button
-                        onClick={onRunAnalysis}
-                        disabled={isAnalyzing}
-                        className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 font-bold text-sm transition-all active:scale-95 shadow-lg shadow-blue-900/20 ${isAnalyzing ? 'bg-blue-600/50 cursor-not-allowed text-gray-300' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
-                    >
-                        {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
-                        {isAnalyzing ? 'Solving Matrix...' : 'Run Analysis'}
-                    </button>
-                    {analysisResult && (
-                        <p className="label-dark-theme text-center mt-2 font-bold text-blue-400 tracking-widest uppercase text-[10px]">
-                            Analysis Complete
-                        </p>
-                    )}
-                </div> */}
             </div>
 
-            {/* Toggle Button Bar - Fixed to the panel edge */}
-            <div className={`absolute top-0 flex flex-col h-full w-[40px] bg-dark-theme border-r border-gray-700 transition-all duration-500 ease-in-out pointer-events-auto rounded-r-md shadow-lg
-                ${!isPanelOpen ? 'translate-x-[0px]' : 'md:translate-x-[400px] translate-x-[calc(100vw-40px)]'}`}>
-                <button
-                    onClick={() => setIsPanelOpen(!isPanelOpen)}
-                    className="iconbutton-dark-theme hover:bg-gray-700 transition-colors"
-                    title={isPanelOpen ? "Close Panel" : "Open Panel"}
-                >
-                    <PanelLeftOpen className={`w-5 h-5 transition-transform duration-300 ${isPanelOpen ? "rotate-180" : ""}`} />
-                </button>
-                <div className="p-1">
-                    <button
-                        onClick={onRunAnalysis}
-                        disabled={isAnalyzing}
-                        title={isAnalyzing ? "Analyzing..." : "Run Analysis"}
-                        className={`w-full cursor-pointer py-2 rounded-lg flex items-center justify-center gap-2 font-bold text-sm transition-all active:scale-95 shadow-lg shadow-blue-900/20 ${isAnalyzing ? 'bg-blue-600/50 cursor-not-allowed text-gray-300' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
-                    >
-                        {isAnalyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 fill-current" />}
-                    </button>
-                </div>
-                <button
-                    onClick={onOpenSettings}
-                    className="iconbutton-dark-theme hover:bg-gray-700 transition-colors"
-                    title="Settings"
-                >
-                    <Settings className="w-5 h-5" />
-                </button>
+            <div className="absolute top-0 left-0 h-16 w-full bg-primary z-100"></div>
+            <div className={`absolute top-16 left-0 bottom-0 h-[calc(100%-4rem)] flex flex-col gap-4 w-100 z-100 p-4 bg-primary border-r border-gray-700 transition ${isPanelOpen ? "translate-x-0" : "-translate-x-100"}`}>
+
+                {activeTab === 'materials' && (
+                    <MaterialManager
+                        materials={model.materials}
+                        onAdd={onAddMaterial}
+                        onUpdate={onUpdateMaterial}
+                        onDelete={onDeleteMaterial}
+                    />
+                )}
+
+                {activeTab === 'sections' && (
+                    <div className="flex flex-col gap-4">
+                        <FrameSectionManager
+                            sections={model.frameSections}
+                            materials={model.materials}
+                            onAdd={onAddFrameSection}
+                            onUpdate={onUpdateFrameSection}
+                            onDelete={onDeleteFrameSection}
+                        />
+                        <ShellSectionManager
+                            sections={model.shellSections}
+                            materials={model.materials}
+                            onAdd={onAddShellSection}
+                            onUpdate={onUpdateShellSection}
+                            onDelete={onDeleteShellSection}
+                        />
+                    </div>
+                )}
+
+                {activeTab === 'loads' && (
+                    <div className="flex flex-col gap-4">
+                        <LoadPatternManager
+                            patterns={model.loadPatterns}
+                            onAdd={onAddLoadPattern}
+                            onUpdate={onUpdateLoadPattern}
+                            onDelete={onDeleteLoadPattern}
+                        />
+                        <LoadCaseManager
+                            cases={model.loadCases}
+                            patterns={model.loadPatterns}
+                            onAdd={onAddLoadCase}
+                            onUpdate={onUpdateLoadCase}
+                            onDelete={onDeleteLoadCase}
+                        />
+                        <LoadCombinationManager
+                            combinations={model.loadCombinations}
+                            cases={model.loadCases}
+                            onAdd={onAddLoadCombination}
+                            onUpdate={onUpdateLoadCombination}
+                            onDelete={onDeleteLoadCombination}
+                        />
+                    </div>
+                )}
+
+                {activeTab === 'loadApp' && (
+                    <LoadApplicationPanel
+                        loadPatterns={model.loadPatterns}
+                        pointLoads={model.pointLoads}
+                        distributedFrameLoads={model.distributedFrameLoads}
+                        areaLoads={model.areaLoads}
+                        joints={model.joints}
+                        frames={model.frames}
+                        shells={model.shells}
+                        onAddPointLoad={onAddPointLoad}
+                        onAddDistributedLoad={onAddDistributedLoad}
+                        onAddAreaLoad={onAddAreaLoad}
+                        onDeletePointLoad={onDeletePointLoad}
+                        onDeleteDistributedLoad={onDeleteDistributedLoad}
+                        onDeleteAreaLoad={onDeleteAreaLoad}
+                    />
+                )}
+
+                {activeTab === 'model' && (
+                    <div className="flex flex-col gap-4">
+                        {/* Tab Selector */}
+                        <div className="flex border-b border-gray-200">
+                            <button
+                                onClick={() => setModelTab('joints')}
+                                className={`cursor-pointer flex-1 px-3 py-2 text-xs font-medium transition-colors ${modelTab === 'joints'
+                                    ? 'bg-white text-gray-600 rounded-t-lg'
+                                    : 'text-white hover:bg-gray-100'
+                                    }`}
+                            >
+                                Joints
+                            </button>
+                            <button
+                                onClick={() => setModelTab('frames')}
+                                className={`cursor-pointer flex-1 px-3 py-2 text-xs font-medium transition-colors ${modelTab === 'frames'
+                                    ? 'bg-white text-gray-600 rounded-t-lg'
+                                    : 'text-white hover:bg-gray-100'
+                                    }`}
+                            >
+                                Frames
+                            </button>
+                            <button
+                                onClick={() => setModelTab('shells')}
+                                className={`cursor-pointer flex-1 px-3 py-2 text-xs font-medium transition-colors ${modelTab === 'shells'
+                                    ? 'bg-white text-gray-600 rounded-t-lg'
+                                    : 'text-white hover:bg-gray-100'
+                                    }`}
+                            >
+                                Shells
+                            </button>
+                        </div>
+
+                        {modelTab === 'joints' && (
+                            <JointTable
+                                joints={model.joints}
+                                onAdd={onAddJoint}
+                                onUpdate={onUpdateJoint}
+                                onDelete={onDeleteJoint}
+                                selectedJointId={uiState.selectedJointId}
+                                onSelectJoint={(id) => setUIState((prev) => ({ ...prev, selectedJointId: id }))}
+                            />
+                        )}
+
+                        {modelTab === 'frames' && (
+                            <FrameTable
+                                frames={model.frames}
+                                joints={model.joints}
+                                sections={model.frameSections}
+                                onDelete={onDeleteFrame}
+                                selectedFrameId={uiState.selectedFrameId}
+                                onSelectFrame={(id) => setUIState((prev) => ({ ...prev, selectedFrameId: id }))}
+                                onToggleCreateMode={onToggleFrameCreateMode}
+                                isCreating={uiState.modelingMode === 'createFrame'}
+                            />
+                        )}
+
+                        {modelTab === 'shells' && (
+                            <ShellTable
+                                shells={model.shells}
+                                joints={model.joints}
+                                sections={model.shellSections}
+                                onDelete={onDeleteShell}
+                                selectedShellId={uiState.selectedShellId}
+                                onSelectShell={(id) => setUIState((prev) => ({ ...prev, selectedShellId: id }))}
+                                onToggleCreateMode={onToggleShellCreateMode}
+                                isCreating={uiState.modelingMode === 'createShell'}
+                            />
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'results' && (
+                    <ResultsPanel
+                        results={analysisResults}
+                        analysisResultMap={analysisResultMap}
+                        activeResultId={activeResultId}
+                        onSelectResult={onSelectResult}
+                        joints={model.joints}
+                        frames={model.frames}
+                        frameSections={model.frameSections}
+                        isAnalyzing={isAnalyzing}
+                    />
+                )}
             </div>
         </div>
     );

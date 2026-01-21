@@ -78,11 +78,11 @@ export function LoadCombinationManager({
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <h3 className="font-bold text-sm uppercase tracking-wider text-gray-700">Load Combinations</h3>
+                <h3 className="font-bold text-sm uppercase tracking-wider text-white">Load Combinations</h3>
                 <button
                     onClick={startCreate}
                     disabled={creating || editing !== null || cases.length === 0}
-                    className="flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
+                    className="cursor-pointer flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
                 >
                     <Plus className="w-3 h-3" />
                     Add Combination
@@ -90,18 +90,18 @@ export function LoadCombinationManager({
             </div>
 
             {cases.length === 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-xs text-yellow-800">
+                <div className="rounded p-3 text-xs text-white">
                     Please create at least one load case before adding load combinations.
                 </div>
             )}
 
-            <div className="border rounded-lg overflow-hidden bg-white">
+            <div className="border rounded-lg overflow-hidden bg-gray-800">
                 <table className="w-full text-xs">
-                    <thead className="bg-gray-100 border-b">
+                    <thead className="bg-gray-700 border-b">
                         <tr>
-                            <th className="text-left px-3 py-2 font-semibold">Name</th>
-                            <th className="text-left px-3 py-2 font-semibold">Load Cases</th>
-                            <th className="text-center px-3 py-2 font-semibold w-20">Actions</th>
+                            <th className="text-left px-3 py-2 font-semibold text-white">Name</th>
+                            <th className="text-left px-3 py-2 font-semibold text-white">Load Cases</th>
+                            <th className="text-center px-3 py-2 font-semibold w-20 text-white">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -176,13 +176,13 @@ function CombinationRow({
     if (!isEditing) {
         return (
             <tr className="border-b hover:bg-gray-50">
-                <td className="px-3 py-2">{combination.name}</td>
+                <td className="px-3 py-2 text-white">{combination.name}</td>
                 <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-1">
                         {combination.cases.map((cc, idx) => {
                             const loadCase = cases.find((c) => c.id === cc.caseId);
                             return loadCase ? (
-                                <span key={idx} className="px-2 py-1 bg-green-200 text-green-800 rounded text-xs">
+                                <span key={idx} className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs">
                                     {loadCase.name} × {cc.scale}
                                 </span>
                             ) : null;
@@ -190,11 +190,11 @@ function CombinationRow({
                     </div>
                 </td>
                 <td className="px-3 py-2">
-                    <div className="flex items-center justify-center gap-1">
-                        <button onClick={onEdit} className="p-1 hover:bg-blue-100 rounded text-blue-600" title="Edit">
+                    <div className="flex items-center justify-center gap-1 text-white">
+                        <button onClick={onEdit} className="cursor-pointer p-1 hover:bg-blue-100 rounded" title="Edit">
                             <Edit2 className="w-3 h-3" />
                         </button>
-                        <button onClick={onDelete} className="p-1 hover:bg-red-100 rounded text-red-600" title="Delete">
+                        <button onClick={onDelete} className="cursor-pointer p-1 hover:bg-red-100 rounded" title="Delete">
                             <Trash2 className="w-3 h-3" />
                         </button>
                     </div>
@@ -204,22 +204,22 @@ function CombinationRow({
     }
 
     return (
-        <tr className="border-b bg-teal-50">
+        <tr className="border-b">
             <td className="px-3 py-2" colSpan={3}>
-                <div className="space-y-2">
+                <div className="space-y-2 text-white">
                     <div>
-                        <label className="text-[10px] text-gray-600">Combination Name</label>
+                        <label className="text-[10px]">Combination Name</label>
                         <input
                             type="text"
                             value={combination.name}
                             onChange={(e) => onChange?.({ ...combination, name: e.target.value })}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
 
                     <div>
                         <div className="flex items-center justify-between mb-1">
-                            <label className="text-[10px] text-gray-600 font-semibold">Load Cases</label>
+                            <label className="text-[10px] font-semibold">Load Cases</label>
                             <button
                                 onClick={onAddCase}
                                 className="flex items-center gap-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[10px]"
@@ -235,22 +235,22 @@ function CombinationRow({
                                     <select
                                         value={cc.caseId}
                                         onChange={(e) => onUpdateCase?.(idx, 'caseId', e.target.value)}
-                                        className="flex-1 px-2 py-1 border rounded text-xs"
+                                        className="input"
                                     >
                                         {cases.map((c) => (
-                                            <option key={c.id} value={c.id}>
+                                            <option className="text-gray-600" key={c.id} value={c.id}>
                                                 {c.name}
                                             </option>
                                         ))}
                                     </select>
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[10px] text-gray-600">×</span>
+                                        <span className="text-[10px]">×</span>
                                         <input
                                             type="number"
                                             step="0.1"
                                             value={cc.scale}
                                             onChange={(e) => onUpdateCase?.(idx, 'scale', Number(e.target.value))}
-                                            className="w-20 px-2 py-1 border rounded text-xs"
+                                            className="input"
                                         />
                                     </div>
                                     <button
@@ -267,13 +267,13 @@ function CombinationRow({
                     <div className="flex gap-2">
                         <button
                             onClick={onSave}
-                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium"
+                            className="cursor-pointer px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium"
                         >
                             Save
                         </button>
                         <button
                             onClick={onCancel}
-                            className="px-3 py-1 bg-gray-400 hover:bg-gray-500 text-white rounded text-xs font-medium"
+                            className="cursor-pointer px-3 py-1 bg-gray-400 hover:bg-gray-500 text-white rounded text-xs font-medium"
                         >
                             Cancel
                         </button>

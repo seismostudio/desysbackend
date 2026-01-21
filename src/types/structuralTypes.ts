@@ -202,8 +202,8 @@ export interface DistributedFrameLoad {
   id: string;
   frameId: number;
   patternId: string;
-  direction: 'X' | 'Y' | 'Z' | 'Gravity';
-  loadType: 'Uniform' | 'Triangular';
+  direction: 'GlobalX' | 'GlobalY' | 'GlobalZ' | 'LocalX' | 'LocalY' | 'LocalZ' | 'Gravity';
+  loadType: 'Uniform' | 'Trapezoidal';
   startMagnitude: number; // kN/m
   endMagnitude: number;   // kN/m
   startDistance: number;  // m from start of frame (relative)
@@ -294,11 +294,20 @@ export interface ShellStresses {
 
 export interface AnalysisResults {
   loadCaseId: string;
+  caseName?: string;
   displacements: JointDisplacement[];
   // Detailed results for frames (for curved visualization)
   frameDetailedResults?: Record<number, {
     stations: number[]; // Relative distance from start (0 to 1) or actual length
     displacements: JointDisplacement[]; // Displacements at each station
+    forces: {
+      P: number;  // Axial Force (Local X)
+      V2: number; // Shear Force (Local Y)
+      V3: number; // Shear Force (Local Z)
+      T: number;  // Torsion (Local X)
+      M2: number; // Moment about Local Y (Minor Axis)
+      M3: number; // Moment about Local Z (Major Axis)
+    }[];
   }>;
   maxDisplacement: number;
   frameForces: FrameForces[];
@@ -307,6 +316,8 @@ export interface AnalysisResults {
   timestamp: number;
   log: string[];
 }
+
+export type AnalysisResultMap = Record<string, AnalysisResults>;
 
 // ============================================
 // DEFAULT VALUES

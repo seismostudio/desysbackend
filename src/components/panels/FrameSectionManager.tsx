@@ -139,11 +139,11 @@ export function FrameSectionManager({ sections, materials, onAdd, onUpdate, onDe
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <h3 className="font-bold text-sm uppercase tracking-wider text-gray-700">Frame Sections</h3>
+                <h3 className="font-bold text-sm uppercase tracking-wider text-white">Frame Sections</h3>
                 <button
                     onClick={startCreate}
                     disabled={creating || editing !== null || materials.length === 0}
-                    className="flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
+                    className="cursor-pointer flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
                 >
                     <Plus className="w-3 h-3" />
                     Add Section
@@ -151,18 +151,18 @@ export function FrameSectionManager({ sections, materials, onAdd, onUpdate, onDe
             </div>
 
             {materials.length === 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-xs text-yellow-800">
+                <div className="rounded p-3 text-xs text-white">
                     Please create at least one material before adding frame sections.
                 </div>
             )}
 
             <div className="border rounded-lg overflow-hidden bg-white">
-                <table className="w-full text-xs">
-                    <thead className="bg-gray-100 border-b">
+                <table className="w-full text-xs bg-gray-800">
+                    <thead className="bg-gray-700 border-b ">
                         <tr>
-                            <th className="text-left px-3 py-2 font-semibold">Name</th>
-                            <th className="text-left px-3 py-2 font-semibold">Material</th>
-                            <th className="text-center px-3 py-2 font-semibold w-20">Actions</th>
+                            <th className="text-left px-3 py-2 font-semibold text-white">Name</th>
+                            <th className="text-left px-3 py-2 font-semibold text-white">Material</th>
+                            <th className="text-center px-3 py-2 font-semibold w-20 text-white">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -232,30 +232,30 @@ function SectionRow({
 }: SectionRowProps) {
     if (!isEditing) {
         const material = materials.find((m) => m.id === section.materialId);
-        const formatted = formatSectionProperties(section.properties);
+        // const formatted = formatSectionProperties(section.properties);
 
         return (
             <tr className="border-b hover:bg-gray-50">
-                <td className="px-3 py-2 flex items-center gap-2">
+                <td className="px-3 py-2 flex items-center gap-2 text-white">
                     <div
                         className="w-4 h-4 rounded border"
                         style={{ backgroundColor: section.color }}
                     />
                     {section.name}
                 </td>
-                <td className="px-3 py-2">{material?.name || 'Unknown'}</td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-2 text-white">{material?.name || 'Unknown'}</td>
+                <td className="px-3 py-2 text-white">
                     <div className="flex items-center justify-center gap-1">
                         <button
                             onClick={onEdit}
-                            className="p-1 hover:bg-blue-100 rounded text-blue-600"
+                            className="cursor-pointer p-1 hover:bg-blue-100 rounded"
                             title="Edit"
                         >
                             <Edit2 className="w-3 h-3" />
                         </button>
                         <button
                             onClick={onDelete}
-                            className="p-1 hover:bg-red-100 rounded text-red-600"
+                            className="cursor-pointer p-1 hover:bg-red-100 rounded"
                             title="Delete"
                         >
                             <Trash2 className="w-3 h-3" />
@@ -267,25 +267,25 @@ function SectionRow({
     }
 
     return (
-        <tr className="border-b bg-purple-50">
+        <tr className="border-b">
             <td className="px-3 py-2" colSpan={5}>
                 <div className="space-y-3">
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2 text-white">
                         <div>
-                            <label className="text-[10px] text-gray-600">Section Name</label>
+                            <label className="text-[10px]">Section Name</label>
                             <input
                                 type="text"
                                 value={section.name}
                                 onChange={(e) => onChange?.({ ...section, name: e.target.value })}
-                                className="w-full px-2 py-1 border rounded text-xs"
+                                className="input"
                             />
                         </div>
                         <div>
-                            <label className="text-[10px] text-gray-600">Shape</label>
+                            <label className="text-[10px]">Shape</label>
                             <select
                                 value={section.dimensions?.shape || 'Rectangular'}
                                 onChange={(e) => onShapeChange?.(e.target.value as SectionShape)}
-                                className="w-full px-2 py-1 border rounded text-xs"
+                                className="input"
                             >
                                 <option value="Rectangular">Rectangular</option>
                                 <option value="Circular">Circular</option>
@@ -295,11 +295,11 @@ function SectionRow({
                             </select>
                         </div>
                         <div>
-                            <label className="text-[10px] text-gray-600">Material</label>
+                            <label className="text-[10px]">Material</label>
                             <select
                                 value={section.materialId}
                                 onChange={(e) => onChange?.({ ...section, materialId: e.target.value })}
-                                className="w-full px-2 py-1 border rounded text-xs"
+                                className="input"
                             >
                                 {materials.map((mat) => (
                                     <option key={mat.id} value={mat.id}>
@@ -310,24 +310,24 @@ function SectionRow({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-4 gap-2 text-white">
                         <DimensionInputs
                             dimensions={section.dimensions}
                             onDimensionChange={onDimensionChange}
                         />
                         <div>
-                            <label className="text-[10px] text-gray-600">Color</label>
+                            <label className="text-[10px]">Color</label>
                             <input
                                 type="color"
                                 value={section.color}
                                 onChange={(e) => onChange?.({ ...section, color: e.target.value })}
-                                className="w-full h-8 border rounded"
+                                className="input"
                             />
                         </div>
                     </div>
 
                     {section.properties && (
-                        <div className="bg-gray-100 rounded p-2">
+                        <div className="bg-gray-100 rounded-md p-2 text-white">
                             <div className="text-[10px] font-semibold text-gray-600 mb-1">Calculated Properties</div>
                             <div className="grid grid-cols-3 gap-2 text-[10px] text-gray-700">
                                 {Object.entries(formatSectionProperties(section.properties)).map(([key, value]) => (
@@ -342,13 +342,13 @@ function SectionRow({
                     <div className="flex gap-2">
                         <button
                             onClick={onSave}
-                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium"
+                            className="px-3 py-1 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium"
                         >
                             Save
                         </button>
                         <button
                             onClick={onCancel}
-                            className="px-3 py-1 bg-gray-400 hover:bg-gray-500 text-white rounded text-xs font-medium"
+                            className="px-3 py-1 cursor-pointer bg-gray-400 hover:bg-gray-500 text-white rounded text-xs font-medium"
                         >
                             Cancel
                         </button>
@@ -373,23 +373,23 @@ function DimensionInputs({
             return (
                 <>
                     <div>
-                        <label className="text-[10px] text-gray-600">Width (m)</label>
+                        <label className="text-[10px]">Width (m)</label>
                         <input
                             type="number"
                             step="0.01"
                             value={dimensions.width}
                             onChange={(e) => onDimensionChange?.('width', Number(e.target.value))}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-gray-600">Height (m)</label>
+                        <label className="text-[10px]">Height (m)</label>
                         <input
                             type="number"
                             step="0.01"
                             value={dimensions.height}
                             onChange={(e) => onDimensionChange?.('height', Number(e.target.value))}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                 </>
@@ -398,13 +398,13 @@ function DimensionInputs({
         case 'Circular':
             return (
                 <div>
-                    <label className="text-[10px] text-gray-600">Diameter (m)</label>
+                    <label className="text-[10px]">Diameter (m)</label>
                     <input
                         type="number"
                         step="0.01"
                         value={dimensions.diameter}
                         onChange={(e) => onDimensionChange?.('diameter', Number(e.target.value))}
-                        className="w-full px-2 py-1 border rounded text-xs"
+                        className="input"
                     />
                 </div>
             );
@@ -413,23 +413,23 @@ function DimensionInputs({
             return (
                 <>
                     <div>
-                        <label className="text-[10px] text-gray-600">Outer Dia. (m)</label>
+                        <label className="text-[10px]">Outer Dia. (m)</label>
                         <input
                             type="number"
                             step="0.01"
                             value={dimensions.outerDiameter}
                             onChange={(e) => onDimensionChange?.('outerDiameter', Number(e.target.value))}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-gray-600">Thickness (m)</label>
+                        <label className="text-[10px]">Thickness (m)</label>
                         <input
                             type="number"
                             step="0.001"
                             value={dimensions.wallThickness}
                             onChange={(e) => onDimensionChange?.('wallThickness', Number(e.target.value))}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                 </>
@@ -439,33 +439,33 @@ function DimensionInputs({
             return (
                 <>
                     <div>
-                        <label className="text-[10px] text-gray-600">Width (m)</label>
+                        <label className="text-[10px]">Width (m)</label>
                         <input
                             type="number"
                             step="0.01"
                             value={dimensions.width}
                             onChange={(e) => onDimensionChange?.('width', Number(e.target.value))}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-gray-600">Height (m)</label>
+                        <label className="text-[10px]">Height (m)</label>
                         <input
                             type="number"
                             step="0.01"
                             value={dimensions.height}
                             onChange={(e) => onDimensionChange?.('height', Number(e.target.value))}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-gray-600">Thickness (m)</label>
+                        <label className="text-[10px]">Thickness (m)</label>
                         <input
                             type="number"
                             step="0.001"
                             value={dimensions.wallThickness}
                             onChange={(e) => onDimensionChange?.('wallThickness', Number(e.target.value))}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                 </>
@@ -475,43 +475,43 @@ function DimensionInputs({
             return (
                 <>
                     <div>
-                        <label className="text-[10px] text-gray-600">Depth (m)</label>
+                        <label className="text-[10px]">Depth (m)</label>
                         <input
                             type="number"
                             step="0.01"
                             value={dimensions.depth}
                             onChange={(e) => onDimensionChange?.('depth', Number(e.target.value))}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-gray-600">Flange W. (m)</label>
+                        <label className="text-[10px]">Flange W. (m)</label>
                         <input
                             type="number"
                             step="0.01"
                             value={dimensions.flangeWidth}
                             onChange={(e) => onDimensionChange?.('flangeWidth', Number(e.target.value))}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-gray-600">Web T. (m)</label>
+                        <label className="text-[10px]">Web T. (m)</label>
                         <input
                             type="number"
                             step="0.001"
                             value={dimensions.webThickness}
                             onChange={(e) => onDimensionChange?.('webThickness', Number(e.target.value))}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-gray-600">Flange T. (m)</label>
+                        <label className="text-[10px]">Flange T. (m)</label>
                         <input
                             type="number"
                             step="0.001"
                             value={dimensions.flangeThickness}
                             onChange={(e) => onDimensionChange?.('flangeThickness', Number(e.target.value))}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                 </>

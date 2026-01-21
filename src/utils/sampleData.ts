@@ -1,28 +1,28 @@
-import type { StructuralModel, Material, FrameSection, ShellSection, LoadPattern, LoadCase, LoadCombination, Joint, Frame, Shell } from '../types/structuralTypes';
+import type { StructuralModel, Material, FrameSection, ShellSection, LoadPattern, LoadCase, LoadCombination, Joint, Frame, Shell, DistributedFrameLoad } from '../types/structuralTypes';
 import { calculateISection, calculateHollow, calculateRectangular } from './sectionCalculator';
 import { FIXED_RESTRAINT } from '../types/structuralTypes';
 
 export const SAMPLE_MATERIALS: Material[] = [
     {
         id: 'mat-steel-1',
-        name: 'A36 Steel',
+        name: 'BJ37',
         type: 'Steel',
-        E: 200000,
+        E: 210000,
         G: 77000,
         poisson: 0.3,
         density: 7850,
-        fy: 250,
-        fu: 400,
+        fy: 370,
+        fu: 550,
     },
     {
         id: 'mat-concrete-1',
-        name: 'C30/37 Concrete',
+        name: 'K-350',
         type: 'Concrete',
-        E: 32000,
-        G: 13333,
+        E: 23000,
+        G: 11666,
         poisson: 0.2,
         density: 2400,
-        fc: 30,
+        fc: 29.05,
         ft: 2.5,
     },
 ];
@@ -30,34 +30,34 @@ export const SAMPLE_MATERIALS: Material[] = [
 export const SAMPLE_FRAME_SECTIONS: FrameSection[] = [
     {
         id: 'sec-beam-1',
-        name: 'IPE 300',
+        name: 'IWF 300.150.6,5.9',
         materialId: 'mat-steel-1',
         color: '#3b82f6', // blue
         dimensions: {
             shape: 'ISection',
             depth: 0.300,
             flangeWidth: 0.150,
-            webThickness: 0.0071,
-            flangeThickness: 0.0107,
+            webThickness: 0.0065,
+            flangeThickness: 0.009,
         },
-        properties: calculateISection(0.300, 0.150, 0.0071, 0.0107),
+        properties: calculateISection(0.300, 0.150, 0.0065, 0.009),
     },
     {
         id: 'sec-column-1',
-        name: 'SHS 150x150x8',
+        name: 'SHS 50.50.2,3',
         materialId: 'mat-steel-1',
         color: '#eab308', // yellow
         dimensions: {
             shape: 'Hollow',
-            width: 0.150,
-            height: 0.150,
-            wallThickness: 0.008,
+            width: 0.50,
+            height: 0.50,
+            wallThickness: 0.0023,
         },
-        properties: calculateHollow(0.150, 0.150, 0.008),
+        properties: calculateHollow(0.50, 0.50, 0.0023),
     },
     {
         id: 'sec-column-2',
-        name: 'K1',
+        name: '150x150',
         materialId: 'mat-concrete-1',
         color: '#eab308', // yellow
         dimensions: {
@@ -72,27 +72,34 @@ export const SAMPLE_FRAME_SECTIONS: FrameSection[] = [
 export const SAMPLE_SHELL_SECTIONS: ShellSection[] = [
     {
         id: 'sec-slab-1',
-        name: 'Concrete Slab 200mm',
+        name: 'Slab 120mm',
         materialId: 'mat-concrete-1',
-        thickness: 0.200,
+        thickness: 0.120,
         color: '#9ca3af', // gray
     },
 ];
 
 export const SAMPLE_LOAD_PATTERNS: LoadPattern[] = [
-    { id: 'pat-dead', name: 'Dead Load', type: 'Dead' },
-    { id: 'pat-live', name: 'Live Load', type: 'Live' },
+    { id: 'pat-dead1', name: 'SIDL', type: 'Dead' },
+    { id: 'pat-dead2', name: 'DL', type: 'Dead', selfWeight: true },
+    { id: 'pat-live', name: 'LL', type: 'Live' },
 ];
 
 export const SAMPLE_LOAD_CASES: LoadCase[] = [
     {
         id: 'case-dead',
-        name: 'Dead Analysis',
-        patterns: [{ patternId: 'pat-dead', scale: 1.0 }],
+        name: 'DL',
+        patterns: [{
+            patternId: 'pat-dead1',
+            scale: 1.0,
+        }, {
+            patternId: 'pat-dead2',
+            scale: 1.0,
+        }],
     },
     {
         id: 'case-live',
-        name: 'Live Analysis',
+        name: 'LL',
         patterns: [{ patternId: 'pat-live', scale: 1.0 }],
     },
 ];
@@ -100,7 +107,7 @@ export const SAMPLE_LOAD_CASES: LoadCase[] = [
 export const SAMPLE_LOAD_COMBINATIONS: LoadCombination[] = [
     {
         id: 'comb-ultimate',
-        name: '1.2D + 1.6L',
+        name: 'Comb 1',
         cases: [
             { caseId: 'case-dead', scale: 1.2 },
             { caseId: 'case-live', scale: 1.6 },
@@ -161,17 +168,21 @@ export const SAMPLE_SHELLS: Shell[] = [
 // Sample Loads
 export const SAMPLE_POINT_LOADS = [
     // Gravity loads on roof level
-    // { id: 'pl-1', jointId: 5, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    // { id: 'pl-2', jointId: 6, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    // { id: 'pl-3', jointId: 7, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    // { id: 'pl-4', jointId: 8, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    // { id: 'pl-5', jointId: 6, patternId: 'pat-dead', fx: 0, fy: 0, fz: 20, mx: 0, my: 0, mz: 0 },
-    // { id: 'pl-6', jointId: 10, patternId: 'pat-dead', fx: 0, fy: -20, fz: 0, mx: 0, my: 0, mz: 0 },
-    // { id: 'pl-7', jointId: 9, patternId: 'pat-dead', fx: 0, fy: -20, fz: 0, mx: 0, my: 0, mz: 0 },
-    // { id: 'pl-8', jointId: 11, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    // { id: 'pl-9', jointId: 12, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    // { id: 'pl-10', jointId: 13, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    // { id: 'pl-11', jointId: 14, patternId: 'pat-dead', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    { id: 'pl-1', jointId: 5, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    { id: 'pl-2', jointId: 6, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    { id: 'pl-3', jointId: 7, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    { id: 'pl-4', jointId: 8, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    { id: 'pl-5', jointId: 6, patternId: 'pat-dead1', fx: 0, fy: 0, fz: 20, mx: 0, my: 0, mz: 0 },
+    { id: 'pl-6', jointId: 10, patternId: 'pat-dead1', fx: 0, fy: -20, fz: 0, mx: 0, my: 0, mz: 0 },
+    { id: 'pl-7', jointId: 9, patternId: 'pat-dead1', fx: 0, fy: -20, fz: 0, mx: 0, my: 0, mz: 0 },
+    { id: 'pl-8', jointId: 11, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    { id: 'pl-9', jointId: 12, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    { id: 'pl-10', jointId: 13, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    { id: 'pl-11', jointId: 14, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+];
+
+export const SAMPLE_DISTRIBUTED_FRAME_LOADS: DistributedFrameLoad[] = [
+    { id: 'dl-1', frameId: 12, patternId: 'pat-live', direction: 'Gravity', loadType: 'Uniform', startMagnitude: 10, endMagnitude: 10, startDistance: 0, endDistance: 10 },
 ];
 
 export const INITIAL_TEMPLATE_MODEL: StructuralModel = {
@@ -185,6 +196,7 @@ export const INITIAL_TEMPLATE_MODEL: StructuralModel = {
     frames: SAMPLE_FRAMES,
     shells: SAMPLE_SHELLS,
     pointLoads: SAMPLE_POINT_LOADS,
-    distributedFrameLoads: [],
+    distributedFrameLoads: SAMPLE_DISTRIBUTED_FRAME_LOADS,
     areaLoads: [],
 };
+

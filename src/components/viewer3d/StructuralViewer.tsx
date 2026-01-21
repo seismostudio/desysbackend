@@ -1,12 +1,13 @@
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import type { Joint, Frame, Shell, FrameSection, ShellSection, ModelingMode, AnalysisResults, PointLoad, DistributedFrameLoad, AreaLoad, LoadPattern } from '../../types/structuralTypes';
-import { getLocalAxes, getOrientedLocalAxes } from '../../utils/frameGeometry';
+// import { getLocalAxes, getOrientedLocalAxes } from '../../utils/frameGeometry';
 import { getDisplacementColor } from '../../utils/colorUtils';
 import { LoadVisualizer } from './LoadVisualizer';
 import { DeformedFrame } from './DeformedFrame';
+import { ForceDiagrams } from './ForceDiagrams';
 
 interface StructuralViewerProps {
     joints: Joint[];
@@ -36,6 +37,7 @@ interface StructuralViewerProps {
     distributedLoads: DistributedFrameLoad[];
     areaLoads: AreaLoad[];
     loadPatterns: LoadPattern[];
+    forceType: string;
 }
 
 export function StructuralViewer({
@@ -64,6 +66,7 @@ export function StructuralViewer({
     distributedLoads,
     areaLoads,
     loadPatterns,
+    forceType,
 }: StructuralViewerProps) {
     const [hoverJoint, setHoverJoint] = useState<number | null>(null);
     const [cursorPos, setCursorPos] = useState<THREE.Vector3 | null>(null);
@@ -83,10 +86,21 @@ export function StructuralViewer({
             style={{ background: 'linear-gradient(to bottom, #e5e7eb, #f3f4f6)' }}
             raycaster={{ params: { Line: { threshold: 0.1 } } } as any}
         >
-            <ambientLight intensity={0.6} />
+            <ambientLight intensity={0.5} />
             <directionalLight position={[10, 10, 5]} intensity={0.8} />
             <Grid args={[100, 100]} cellSize={1} cellColor="#0255e6" sectionColor="#b9b9b9" />
             <OrbitControls makeDefault />
+
+            {/* Force Diagrams */}
+            {analysisResults && forceType !== 'none' && (
+                <ForceDiagrams
+                    frames={frames}
+                    joints={joints}
+                    analysisResults={analysisResults}
+                    forceType={forceType}
+                    scale={deformationScale}
+                />
+            )}
 
             {/* Render original geometry only when NOT in deformation mode */}
             {!showDeformation && (
@@ -378,7 +392,7 @@ function FrameLine({
 
         let geometry: THREE.BufferGeometry | THREE.Group;
         const dims = section.dimensions;
-        const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.5, roughness: 0.5 });
+        const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.4, roughness: 0.4, opacity: 0.5 });
 
         switch (dims.shape) {
             case 'Rectangular':
@@ -413,7 +427,7 @@ function FrameLine({
 
                 const geo = new THREE.ExtrudeGeometry(outerShape, { depth: length, bevelEnabled: false });
                 geo.rotateX(Math.PI / 2);
-                geo.translate(0, -length / 2, 0); // Correctly center the extrusion
+                geo.translate(0, length / 2, 0); // Correctly center the extrusion
                 geometry = geo;
                 break;
             }
@@ -457,7 +471,7 @@ function FrameLine({
                     onClick(true);
                 }}
             >
-                <cylinderGeometry args={[0.2, 0.2, length, 8]} />
+                <cylinderGeometry args={[0.1, 0.1, length, 8]} />
                 <meshStandardMaterial transparent opacity={0} />
             </mesh>
 
@@ -465,7 +479,7 @@ function FrameLine({
             {isSelected && (
                 <mesh>
                     <cylinderGeometry args={[0.05, 0.05, length, 8]} />
-                    <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} transparent opacity={0.3} />
+                    <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0} transparent opacity={0} />
                 </mesh>
             )}
         </group>
@@ -491,7 +505,7 @@ function TempFrameLine({ startJoint, endPos }: { startJoint: Joint; endPos: THRE
 
 // Shell Polygon Component
 function ShellPolygon({
-    shell,
+    // shell,
     joints,
     section,
     isSelected,
@@ -506,7 +520,7 @@ function ShellPolygon({
     onClick: (isDoubleClick?: boolean) => void;
 }) {
     const color = section ? section.color : '#10b981';
-    const opacity = isSelected ? 0.8 : 0.4;
+    const opacity = isSelected ? 0.8 : 0.5;
 
     // Centroid for positioning
     const centroid = useMemo(() => {

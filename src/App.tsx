@@ -1,21 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { StructuralViewer } from './components/viewer3d/StructuralViewer';
-import { MaterialManager } from './components/panels/MaterialManager';
-import { FrameSectionManager } from './components/panels/FrameSectionManager';
-import { ShellSectionManager } from './components/panels/ShellSectionManager';
-import { LoadPatternManager } from './components/panels/LoadPatternManager';
-import { LoadCaseManager } from './components/panels/LoadCaseManager';
-import { LoadCombinationManager } from './components/panels/LoadCombinationManager';
-import { LoadApplicationPanel } from './components/panels/LoadApplicationPanel';
-import { JointTable } from './components/panels/JointTable';
-import { FrameTable } from './components/panels/FrameTable';
-import { ShellTable } from './components/panels/ShellTable';
+import { InputPanel } from './components/panels/InputPanel';
 import { JointModal } from './components/modals/JointModal';
 import { FrameModal } from './components/modals/FrameModal';
 import { ShellModal } from './components/modals/ShellModal';
 import { INITIAL_TEMPLATE_MODEL } from './utils/sampleData';
 import {
-  DEFAULT_STRUCTURAL_MODEL,
+
   DEFAULT_UI_STATE,
   type StructuralModel,
   type UIState,
@@ -33,23 +24,29 @@ import {
   type AreaLoad,
 } from './types/structuralTypes';
 import { Book, Play } from 'lucide-react';
-import { analyzeStructure } from './utils/feaSolver';
-import { ResultsPanel } from './components/panels/ResultsPanel';
+import { analyzeStructure, combineResults } from './utils/feaSolver';
 import { DisplacementLegendPanel } from './components/panels/DisplacementLegendPanel';
-import type { AnalysisResults } from './types/structuralTypes';
+import type { AnalysisResultMap } from './types/structuralTypes';
 
 function App() {
   const [model, setModel] = useState<StructuralModel>(INITIAL_TEMPLATE_MODEL);
   const [uiState, setUIState] = useState<UIState>(DEFAULT_UI_STATE);
   const [activeTab, setActiveTab] = useState<'materials' | 'sections' | 'loads' | 'loadApp' | 'model' | 'results'>('materials');
   const [modelTab, setModelTab] = useState<'joints' | 'frames' | 'shells'>('joints');
-  const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResultMap | null>(null);
+  const [activeResultId, setActiveResultId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [selectedLoadCase, setSelectedLoadCase] = useState<string>('');
 
-  // Visualization state
+  // Analysis Selection State
+  const [selectedLoadCases, setSelectedLoadCases] = useState<Set<string>>(new Set());
+  const [selectedCombinations, setSelectedCombinations] = useState<Set<string>>(new Set());
+
+  // Deformation Visualization
   const [showDeformation, setShowDeformation] = useState(false);
   const [deformationScale, setDeformationScale] = useState(10);
+  const [forceType, setForceType] = useState<string>('none');
+
+  // Load Visualization
   const [showLoads, setShowLoads] = useState(false);
   const [loadFilterType, setLoadFilterType] = useState<'all' | 'point' | 'distributed' | 'area'>('all');
   const [loadFilterPattern, setLoadFilterPattern] = useState<string>('all');
@@ -195,8 +192,8 @@ function App() {
 
   // Analysis handler
   const runAnalysis = async () => {
-    if (!selectedLoadCase) {
-      alert('Please select a load case first');
+    if (selectedLoadCases.size === 0 && selectedCombinations.size === 0) {
+      alert('Please select at least one load case or combination to run.');
       return;
     }
 
@@ -206,8 +203,38 @@ function App() {
     // Run analysis in a timeout to allow UI to update
     setTimeout(() => {
       try {
-        const results = analyzeStructure(model, selectedLoadCase);
-        setAnalysisResults(results);
+        const resultsMap: AnalysisResultMap = {};
+        const casesToRun = new Set(selectedLoadCases);
+
+        // Ensure we run cases required by selected combinations
+        selectedCombinations.forEach(comboId => {
+          const combo = model.loadCombinations.find(c => c.id === comboId);
+          if (combo) {
+            combo.cases.forEach(c => casesToRun.add(c.caseId));
+          }
+        });
+
+        // 1. Run Load Cases
+        for (const caseId of casesToRun) {
+          const results = analyzeStructure(model, caseId);
+          resultsMap[caseId] = results;
+        }
+
+        // 2. Run Combinations
+        for (const comboId of selectedCombinations) {
+          const combo = model.loadCombinations.find(c => c.id === comboId);
+          if (combo) {
+            const results = combineResults(combo, resultsMap);
+            resultsMap[comboId] = results;
+          }
+        }
+
+        setAnalysisResults(resultsMap);
+
+        // Auto-select first result
+        const firstId = Object.keys(resultsMap)[0];
+        if (firstId) setActiveResultId(firstId);
+
       } catch (error) {
         console.error('Analysis error:', error);
         setAnalysisResults(null);
@@ -370,7 +397,7 @@ function App() {
   return (
     <div className="flex flex-col h-screen w-full bg-gray-100 text-gray-900 overflow-hidden font-sans">
       {/* Header */}
-      <header className="h-[60px] bg-gray-900 flex items-center px-6 shadow-md z-20 shrink-0">
+      <header className="h-16 bg-gray-900 flex items-center px-6 shadow-md z-200 shrink-0 border-b border-gray-700">
         <div className="flex items-center gap-4">
           <div className="bg-gray-800 rounded-md flex items-center justify-center text-white text-4xl font-bold">
             <img src="/Logo.png" alt="Logo" className="w-10 h-10" />
@@ -401,196 +428,52 @@ function App() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel */}
-        <div className="w-[400px] bg-white border-r overflow-y-auto p-4 flex flex-col gap-4">
-          <div className="flex gap-1 border-b pb-2">
-            <button
-              onClick={() => setActiveTab('materials')}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${activeTab === 'materials' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-            >
-              Materials
-            </button>
-            <button
-              onClick={() => setActiveTab('sections')}
-              className={` px-3 py-1.5 rounded text-xs font-medium transition-colors ${activeTab === 'sections' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-            >
-              Sections
-            </button>
-            <button
-              onClick={() => setActiveTab('loads')}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${activeTab === 'loads' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-            >
-              Load Def.
-            </button>
-            <button
-              onClick={() => setActiveTab('loadApp')}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${activeTab === 'loadApp' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-            >
-              Load App.
-            </button>
-            <button
-              onClick={() => setActiveTab('model')}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${activeTab === 'model' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-            >
-              Model
-            </button>
-            <button
-              onClick={() => setActiveTab('results')}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${activeTab === 'results' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-            >
-              Results
-            </button>
-          </div>
+        <InputPanel
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          model={model}
+          uiState={uiState}
+          setUIState={setUIState}
+          modelTab={modelTab}
+          setModelTab={setModelTab}
 
-          {activeTab === 'materials' && (
-            <MaterialManager
-              materials={model.materials}
-              onAdd={addMaterial}
-              onUpdate={updateMaterial}
-              onDelete={deleteMaterial}
-            />
-          )}
-
-          {activeTab === 'sections' && (
-            <div className="flex flex-col gap-4">
-              <FrameSectionManager
-                sections={model.frameSections}
-                materials={model.materials}
-                onAdd={addFrameSection}
-                onUpdate={updateFrameSection}
-                onDelete={deleteFrameSection}
-              />
-              <ShellSectionManager
-                sections={model.shellSections}
-                materials={model.materials}
-                onAdd={addShellSection}
-                onUpdate={updateShellSection}
-                onDelete={deleteShellSection}
-              />
-            </div>
-          )}
-
-          {activeTab === 'loads' && (
-            <div className="flex flex-col gap-4">
-              <LoadPatternManager
-                patterns={model.loadPatterns}
-                onAdd={addLoadPattern}
-                onUpdate={updateLoadPattern}
-                onDelete={deleteLoadPattern}
-              />
-              <LoadCaseManager
-                cases={model.loadCases}
-                patterns={model.loadPatterns}
-                onAdd={addLoadCase}
-                onUpdate={updateLoadCase}
-                onDelete={deleteLoadCase}
-              />
-              <LoadCombinationManager
-                combinations={model.loadCombinations}
-                cases={model.loadCases}
-                onAdd={addLoadCombination}
-                onUpdate={updateLoadCombination}
-                onDelete={deleteLoadCombination}
-              />
-            </div>
-          )}
-
-          {activeTab === 'loadApp' && (
-            <LoadApplicationPanel
-              loadPatterns={model.loadPatterns}
-              pointLoads={model.pointLoads}
-              distributedFrameLoads={model.distributedFrameLoads}
-              areaLoads={model.areaLoads}
-              joints={model.joints}
-              frames={model.frames}
-              shells={model.shells}
-              onAddPointLoad={addPointLoad}
-              onAddDistributedLoad={addDistributedLoad}
-              onAddAreaLoad={addAreaLoad}
-              onDeletePointLoad={deletePointLoad}
-              onDeleteDistributedLoad={deleteDistributedLoad}
-              onDeleteAreaLoad={deleteAreaLoad}
-            />
-          )}
-
-          {activeTab === 'model' && (
-            <div className="flex flex-col gap-4">
-              <div className="flex gap-1 border-b pb-2">
-                <button
-                  onClick={() => setModelTab('joints')}
-                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${modelTab === 'joints' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                >
-                  Joints
-                </button>
-                <button
-                  onClick={() => setModelTab('frames')}
-                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${modelTab === 'frames' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                >
-                  Frames
-                </button>
-                <button
-                  onClick={() => setModelTab('shells')}
-                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${modelTab === 'shells' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                >
-                  Shells
-                </button>
-              </div>
-
-              {modelTab === 'joints' && (
-                <JointTable
-                  joints={model.joints}
-                  onAdd={addJoint}
-                  onUpdate={updateJoint}
-                  onDelete={deleteJoint}
-                  selectedJointId={uiState.selectedJointId}
-                  onSelectJoint={(id) => setUIState((prev) => ({ ...prev, selectedJointId: id }))}
-                />
-              )}
-
-              {modelTab === 'frames' && (
-                <FrameTable
-                  frames={model.frames}
-                  joints={model.joints}
-                  sections={model.frameSections}
-                  onDelete={deleteFrame}
-                  selectedFrameId={uiState.selectedFrameId}
-                  onSelectFrame={(id) => setUIState((prev) => ({ ...prev, selectedFrameId: id }))}
-                  onToggleCreateMode={toggleFrameCreateMode}
-                  isCreating={uiState.modelingMode === 'createFrame'}
-                />
-              )}
-
-              {modelTab === 'shells' && (
-                <ShellTable
-                  shells={model.shells}
-                  joints={model.joints}
-                  sections={model.shellSections}
-                  onDelete={deleteShell}
-                  selectedShellId={uiState.selectedShellId}
-                  onSelectShell={(id) => setUIState((prev) => ({ ...prev, selectedShellId: id }))}
-                  onToggleCreateMode={toggleShellCreateMode}
-                  isCreating={uiState.modelingMode === 'createShell'}
-                />
-              )}
-            </div>
-          )}
-
-          {activeTab === 'results' && (
-            <ResultsPanel
-              results={analysisResults}
-              joints={model.joints}
-              isAnalyzing={isAnalyzing}
-            />
-          )}
-        </div>
+          analysisResults={analysisResults && activeResultId ? analysisResults[activeResultId] : null}
+          analysisResultMap={analysisResults}
+          activeResultId={activeResultId}
+          onSelectResult={setActiveResultId}
+          isAnalyzing={isAnalyzing}
+          onAddMaterial={addMaterial}
+          onUpdateMaterial={updateMaterial}
+          onDeleteMaterial={deleteMaterial}
+          onAddFrameSection={addFrameSection}
+          onUpdateFrameSection={updateFrameSection}
+          onDeleteFrameSection={deleteFrameSection}
+          onAddShellSection={addShellSection}
+          onUpdateShellSection={updateShellSection}
+          onDeleteShellSection={deleteShellSection}
+          onAddLoadPattern={addLoadPattern}
+          onUpdateLoadPattern={updateLoadPattern}
+          onDeleteLoadPattern={deleteLoadPattern}
+          onAddLoadCase={addLoadCase}
+          onUpdateLoadCase={updateLoadCase}
+          onDeleteLoadCase={deleteLoadCase}
+          onAddLoadCombination={addLoadCombination}
+          onUpdateLoadCombination={updateLoadCombination}
+          onDeleteLoadCombination={deleteLoadCombination}
+          onAddPointLoad={addPointLoad}
+          onDeletePointLoad={deletePointLoad}
+          onAddDistributedLoad={addDistributedLoad}
+          onDeleteDistributedLoad={deleteDistributedLoad}
+          onAddAreaLoad={addAreaLoad}
+          onDeleteAreaLoad={deleteAreaLoad}
+          onAddJoint={addJoint}
+          onUpdateJoint={updateJoint}
+          onDeleteJoint={deleteJoint}
+          onDeleteFrame={deleteFrame}
+          onToggleFrameCreateMode={toggleFrameCreateMode}
+          onDeleteShell={deleteShell}
+          onToggleShellCreateMode={toggleShellCreateMode}
+        />
 
         {/* 3D Viewer */}
         <div className="flex-1 relative">
@@ -611,7 +494,8 @@ function App() {
             selectedJointId={uiState.selectedJointId}
             selectedFrameId={uiState.selectedFrameId}
             selectedShellId={uiState.selectedShellId}
-            analysisResults={analysisResults}
+
+            analysisResults={analysisResults && activeResultId ? analysisResults[activeResultId] : null}
             showDeformation={showDeformation}
             deformationScale={deformationScale}
             showLoads={showLoads}
@@ -621,33 +505,62 @@ function App() {
             distributedLoads={model.distributedFrameLoads}
             areaLoads={model.areaLoads}
             loadPatterns={model.loadPatterns}
+            forceType={forceType}
           />
 
           {/* Viewport Controls */}
           <div className="absolute top-4 right-4 bg-white/90 backdrop-blur p-3 rounded-xl shadow-xl border text-xs">
             <div className="font-bold mb-2 uppercase tracking-wider">Analysis</div>
 
-            {/* Load Case Selector */}
-            <div className="mb-3">
-              <label className="text-[10px] text-gray-600 block mb-1">Load Case</label>
-              <select
-                value={selectedLoadCase}
-                onChange={(e) => setSelectedLoadCase(e.target.value)}
-                className="w-full px-2 py-1 border rounded text-[10px] bg-white"
-              >
-                <option value="">Select...</option>
-                {model.loadCases.map((lc) => (
-                  <option key={lc.id} value={lc.id}>
-                    {lc.name}
-                  </option>
+            {/* Load Case & Combination Selection */}
+            <div className="mb-3 max-h-40 overflow-y-auto border rounded p-2 bg-gray-50">
+              <div className="mb-2">
+                <div className="text-[10px] font-bold text-gray-700 mb-1">Load Cases</div>
+                {model.loadCases.map(lc => (
+                  <label key={lc.id} className="flex items-center gap-2 mb-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedLoadCases.has(lc.id)}
+                      onChange={(e) => {
+                        const newSet = new Set(selectedLoadCases);
+                        if (e.target.checked) newSet.add(lc.id);
+                        else newSet.delete(lc.id);
+                        setSelectedLoadCases(newSet);
+                      }}
+                      className="w-3 h-3 rounded accent-blue-600"
+                    />
+                    <span className="text-[10px] text-gray-600">{lc.name}</span>
+                  </label>
                 ))}
-              </select>
+                {model.loadCases.length === 0 && <div className="text-[10px] text-gray-400 italic">No load cases defined</div>}
+              </div>
+
+              <div className="mb-1">
+                <div className="text-[10px] font-bold text-gray-700 mb-1">Combinations</div>
+                {model.loadCombinations.map(lc => (
+                  <label key={lc.id} className="flex items-center gap-2 mb-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedCombinations.has(lc.id)}
+                      onChange={(e) => {
+                        const newSet = new Set(selectedCombinations);
+                        if (e.target.checked) newSet.add(lc.id);
+                        else newSet.delete(lc.id);
+                        setSelectedCombinations(newSet);
+                      }}
+                      className="w-3 h-3 rounded accent-blue-600"
+                    />
+                    <span className="text-[10px] text-gray-600">{lc.name}</span>
+                  </label>
+                ))}
+                {model.loadCombinations.length === 0 && <div className="text-[10px] text-gray-400 italic">No combinations defined</div>}
+              </div>
             </div>
 
             {/* Run Analysis Button */}
             <button
               onClick={runAnalysis}
-              disabled={!selectedLoadCase || isAnalyzing}
+              disabled={isAnalyzing}
               className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium flex items-center justify-center gap-2 transition-colors mb-3"
             >
               <Play className="w-3 h-3" />
@@ -662,131 +575,160 @@ function App() {
                 <span className="text-gray-600">Deformation</span>
                 <button
                   onClick={() => setShowDeformation(!showDeformation)}
-                  disabled={!analysisResults}
+                  disabled={!analysisResults || !activeResultId}
                   className={`w-12 h-6 rounded-full relative transition-all ${showDeformation ? 'bg-blue-600' : 'bg-gray-300'} disabled:opacity-50`}
                 >
                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showDeformation ? 'left-7' : 'left-1'}`} />
                 </button>
               </div>
-              {showDeformation && (
-                <div>
-                  <label className="text-[10px] text-gray-600 block mb-1">Scale: {deformationScale}x</label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="100"
-                    value={deformationScale}
-                    onChange={(e) => setDeformationScale(Number(e.target.value))}
-                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  />
-                </div>
-              )}
+            </div>
+            {showDeformation && (
+              <div>
+                <label className="text-[10px] text-gray-600 block mb-1">Scale: {deformationScale}x</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="100"
+                  value={deformationScale}
+                  onChange={(e) => setDeformationScale(Number(e.target.value))}
+                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+              </div>
+            )}
+
+            {/* Internal Force Visualization */}
+            <div className="mb-3">
+              <label className="block text-[10px] text-gray-600 mb-1">Internal Forces</label>
+              <select
+                value={forceType}
+                onChange={(e) => setForceType(e.target.value)}
+                className="input w-full"
+                disabled={!analysisResults || !activeResultId}
+              >
+                <option value="none">None</option>
+                <option value="P">Axial Force (P)</option>
+                <option value="V2">Shear Major (V2)</option>
+                <option value="V3">Shear Minor (V3)</option>
+                <option value="T">Torsion (T)</option>
+                <option value="M2">Moment Major (M2)</option>
+                <option value="M3">Moment Minor (M3)</option>
+              </select>
             </div>
 
-            {/* Load Visualization */}
+            <div className="mt-4">
+              <div className="font-bold mb-2 uppercase tracking-wider border-t pt-2">Viewport</div>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <span className="text-gray-600">Extrude Mode</span>
+                <button
+                  onClick={() => setUIState((prev) => ({ ...prev, extrudeMode: !prev.extrudeMode }))}
+                  className={`w-12 h-6 rounded-full relative transition-all ${uiState.extrudeMode ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${uiState.extrudeMode ? 'left-7' : 'left-1'
+                      }`}
+                  />
+                </button>
+              </div>
+              <div className="text-[10px] text-gray-500 space-y-1">
+                <div>• Joints: {model.joints.length}</div>
+                <div>• Frames: {model.frames.length}</div>
+                <div>• Shells: {model.shells.length}</div>
+              </div>
+            </div>
+
             <div className="mb-3">
               <div className="flex items-center justify-between gap-3 mb-2">
                 <span className="text-gray-600">Show Loads</span>
                 <button
                   onClick={() => setShowLoads(!showLoads)}
-                  className={`w-12 h-6 rounded-full relative transition-all ${showLoads ? 'bg-blue-600' : 'bg-gray-300'}`}
+                  // disabled={!analysisResults || !activeResultId}
+                  className={`w-12 h-6 rounded-full relative transition-all ${showLoads ? 'bg-blue-600' : 'bg-gray-300'} disabled:opacity-50`}
                 >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showLoads ? 'left-7' : 'left-1'}`} />
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showDeformation ? 'left-7' : 'left-1'}`} />
                 </button>
               </div>
-              {showLoads && (
-                <div className="space-y-2">
-                  <div>
-                    <label className="text-[10px] text-gray-600 block mb-1">Type</label>
-                    <select
-                      value={loadFilterType}
-                      onChange={(e) => setLoadFilterType(e.target.value as any)}
-                      className="w-full px-2 py-1 border rounded text-[10px] bg-white"
-                    >
-                      <option value="all">All</option>
-                      <option value="point">Point</option>
-                      <option value="distributed">Distributed</option>
-                      <option value="area">Area</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-600 block mb-1">Pattern</label>
-                    <select
-                      value={loadFilterPattern}
-                      onChange={(e) => setLoadFilterPattern(e.target.value)}
-                      className="w-full px-2 py-1 border rounded text-[10px] bg-white"
-                    >
-                      <option value="all">All</option>
-                      {model.loadPatterns.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                  </div>
+            </div>
+            {showLoads && (
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] text-gray-600 block mb-1">Type</label>
+                  <select
+                    value={loadFilterType}
+                    onChange={(e) => setLoadFilterType(e.target.value as any)}
+                    className="w-full px-2 py-1 border rounded text-[10px] bg-white"
+                  >
+                    <option value="all">All</option>
+                    <option value="point">Point</option>
+                    <option value="distributed">Distributed</option>
+                    <option value="area">Area</option>
+                  </select>
                 </div>
-              )}
-            </div>
-
-            <div className="font-bold mb-2 uppercase tracking-wider border-t pt-2">Viewport</div>
-            <div className="flex items-center justify-between gap-3 mb-2">
-              <span className="text-gray-600">Extrude Mode</span>
-              <button
-                onClick={() => setUIState((prev) => ({ ...prev, extrudeMode: !prev.extrudeMode }))}
-                className={`w-12 h-6 rounded-full relative transition-all ${uiState.extrudeMode ? 'bg-blue-600' : 'bg-gray-300'
-                  }`}
-              >
-                <div
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${uiState.extrudeMode ? 'left-7' : 'left-1'
-                    }`}
-                />
-              </button>
-            </div>
-            <div className="text-[10px] text-gray-500 space-y-1">
-              <div>• Joints: {model.joints.length}</div>
-              <div>• Frames: {model.frames.length}</div>
-              <div>• Shells: {model.shells.length}</div>
-            </div>
+                <div>
+                  <label className="text-[10px] text-gray-600 block mb-1">Pattern</label>
+                  <select
+                    value={loadFilterPattern}
+                    onChange={(e) => setLoadFilterPattern(e.target.value)}
+                    className="w-full px-2 py-1 border rounded text-[10px] bg-white"
+                  >
+                    <option value="all">All</option>
+                    {model.loadPatterns.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Displacement Legend Panel */}
-          <DisplacementLegendPanel
-            results={analysisResults}
-            show={showDeformation}
-          />
+
         </div>
+
+        {/* Displacement Legend Panel */}
+        <DisplacementLegendPanel
+          results={analysisResults && activeResultId ? analysisResults[activeResultId] : null}
+          show={showDeformation}
+        />
       </div>
 
       {/* Modals */}
-      {uiState.showJointModal && uiState.selectedJointId && (
-        <JointModal
-          joint={model.joints.find(j => j.id === uiState.selectedJointId)!}
-          onUpdate={updateJoint}
-          onDelete={deleteJoint}
-          onClose={() => setUIState(prev => ({ ...prev, showJointModal: false }))}
-        />
-      )}
+      {
+        uiState.showJointModal && uiState.selectedJointId && (
+          <JointModal
+            joint={model.joints.find(j => j.id === uiState.selectedJointId)!}
+            onUpdate={updateJoint}
+            onDelete={deleteJoint}
+            onClose={() => setUIState(prev => ({ ...prev, showJointModal: false }))}
+          />
+        )
+      }
 
-      {uiState.showFrameModal && uiState.selectedFrameId && (
-        <FrameModal
-          frame={model.frames.find(f => f.id === uiState.selectedFrameId)!}
-          joints={model.joints}
-          sections={model.frameSections}
-          onUpdate={updateFrame}
-          onDelete={deleteFrame}
-          onClose={() => setUIState(prev => ({ ...prev, showFrameModal: false }))}
-        />
-      )}
+      {
+        uiState.showFrameModal && uiState.selectedFrameId && (
+          <FrameModal
+            frame={model.frames.find(f => f.id === uiState.selectedFrameId)!}
+            joints={model.joints}
+            sections={model.frameSections}
+            onUpdate={updateFrame}
+            onDelete={deleteFrame}
+            onClose={() => setUIState(prev => ({ ...prev, showFrameModal: false }))}
+          />
+        )
+      }
 
-      {uiState.showShellModal && uiState.selectedShellId && (
-        <ShellModal
-          shell={model.shells.find(s => s.id === uiState.selectedShellId)!}
-          joints={model.joints}
-          sections={model.shellSections}
-          onUpdate={updateShell}
-          onDelete={deleteShell}
-          onClose={() => setUIState(prev => ({ ...prev, showShellModal: false }))}
-        />
-      )}
-    </div>
+      {
+        uiState.showShellModal && uiState.selectedShellId && (
+          <ShellModal
+            shell={model.shells.find(s => s.id === uiState.selectedShellId)!}
+            joints={model.joints}
+            sections={model.shellSections}
+            onUpdate={updateShell}
+            onDelete={deleteShell}
+            onClose={() => setUIState(prev => ({ ...prev, showShellModal: false }))}
+          />
+        )
+      }
+    </div >
   );
 }
 

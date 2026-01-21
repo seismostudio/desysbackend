@@ -59,6 +59,7 @@ body {
   @apply border-gray-500 shadow-gray-500;
 }
 
+/* Hide scrollbar utilites */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -66,4 +67,51 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #1f2937;
+  /* thumb track */
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #1f2937;
+  /* gray-800 */
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  /* gray-600 */
+  border-radius: 4px;
+  border: 1px solid #1f2937;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+  /* gray-500 */
+}
+
+/* Corner */
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: #1f2937;
+}
+
+.transition {
+  @apply transition-all ease-in-out duration-300;
+}
+
+.bg-primary {
+  @apply bg-gray-900;
+}
+
+.input {
+  @apply w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-xs text-white;
 }

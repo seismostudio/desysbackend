@@ -26,12 +26,12 @@ export function ShellTable({
     return (
         <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-xs uppercase tracking-wider text-gray-700">Shells/Plates</h4>
+                <h4 className="font-semibold text-xs uppercase tracking-wider text-white">Shells/Plates</h4>
                 <button
                     onClick={onToggleCreateMode}
                     className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors ${isCreating
-                            ? 'bg-red-600 hover:bg-red-700 text-white'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
                         }`}
                 >
                     <MousePointer2 className="w-3 h-3" />
@@ -45,15 +45,15 @@ export function ShellTable({
                 </div>
             )}
 
-            <div className="border rounded-lg overflow-hidden bg-white max-h-60 overflow-y-auto">
+            <div className="border rounded-lg overflow-hidden bg-gray-800 h-fit overflow-y-auto no-scrollbar">
                 <table className="w-full text-[10px]">
-                    <thead className="bg-gray-100 border-b sticky top-0">
+                    <thead className="bg-gray-700 border-b sticky top-0">
                         <tr>
-                            <th className="text-left px-2 py-1 font-semibold">ID</th>
-                            <th className="text-left px-2 py-1 font-semibold">Joints</th>
-                            <th className="text-left px-2 py-1 font-semibold">Section</th>
-                            <th className="text-right px-2 py-1 font-semibold">Area (m²)</th>
-                            <th className="text-center px-2 py-1 font-semibold w-12">Actions</th>
+                            <th className="text-left px-2 py-1 font-semibold text-white">ID</th>
+                            <th className="text-left px-2 py-1 font-semibold text-white">Joints</th>
+                            <th className="text-left px-2 py-1 font-semibold text-white">Section</th>
+                            <th className="text-right px-2 py-1 font-semibold text-white">Area (m²)</th>
+                            <th className="text-center px-2 py-1 font-semibold w-12 text-white">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -66,12 +66,12 @@ export function ShellTable({
                             return (
                                 <tr
                                     key={shell.id}
-                                    className={`border-b hover:bg-gray-50 cursor-pointer ${isSelected ? 'bg-green-100' : ''}`}
+                                    className={`border-b hover:bg-gray-50 cursor-pointer ${isSelected ? 'bg-gray-700' : ''}`}
                                     onClick={() => onSelectShell(shell.id)}
                                 >
-                                    <td className="px-2 py-1 font-medium">{shell.id}</td>
-                                    <td className="px-2 py-1">{shell.jointIds.join(', ')}</td>
-                                    <td className="px-2 py-1">
+                                    <td className="px-2 py-1 font-medium text-white">{shell.id}</td>
+                                    <td className="px-2 py-1 text-white">{shell.jointIds.join(', ')}</td>
+                                    <td className="px-2 py-1 text-white">
                                         {section ? (
                                             <div className="flex items-center gap-1">
                                                 <div
@@ -84,7 +84,7 @@ export function ShellTable({
                                             <span className="text-gray-400">Not assigned</span>
                                         )}
                                     </td>
-                                    <td className="px-2 py-1 text-right">{area.toFixed(3)}</td>
+                                    <td className="px-2 py-1 text-right text-white">{area.toFixed(3)}</td>
                                     <td className="px-2 py-1" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center justify-center">
                                             <button
@@ -92,7 +92,8 @@ export function ShellTable({
                                                     e.stopPropagation();
                                                     onDelete(shell.id);
                                                 }}
-                                                className="p-0.5 hover:bg-red-100 rounded text-red-600"
+                                                title="Delete Shell"
+                                                className="cursor-pointer p-0.5 hover:bg-red-100 rounded text-white"
                                             >
                                                 <Trash2 className="w-3 h-3" />
                                             </button>

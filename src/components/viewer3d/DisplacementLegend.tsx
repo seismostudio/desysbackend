@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Html } from '@react-three/drei';
 import type { AnalysisResults } from '../../types/structuralTypes';
-import { getDisplacementColor, generateLegendGradient } from '../../utils/colorUtils';
+import { generateLegendGradient } from '../../utils/colorUtils';
 
 interface DisplacementLegendProps {
     results: AnalysisResults | null;

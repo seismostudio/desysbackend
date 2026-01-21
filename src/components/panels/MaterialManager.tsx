@@ -85,24 +85,24 @@ export function MaterialManager({ materials, onAdd, onUpdate, onDelete }: Materi
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <h3 className="font-bold text-sm uppercase tracking-wider text-gray-700">Materials</h3>
+                <h3 className="font-bold text-sm uppercase tracking-wider text-white">Materials</h3>
                 <button
                     onClick={startCreate}
                     disabled={creating || editing !== null}
-                    className="flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
+                    className="cursor-pointer flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
                 >
                     <Plus className="w-3 h-3" />
                     Add Material
                 </button>
             </div>
 
-            <div className="border rounded-lg overflow-hidden bg-white">
+            <div className="border rounded-lg overflow-hidden bg-gray-800">
                 <table className="w-full text-xs">
-                    <thead className="bg-gray-100 border-b">
+                    <thead className="bg-gray-700 border-b">
                         <tr>
-                            <th className="text-left px-3 py-2 font-semibold">Name</th>
-                            <th className="text-left px-3 py-2 font-semibold">Type</th>
-                            <th className="text-center px-3 py-2 font-semibold w-20">Actions</th>
+                            <th className="text-left px-3 py-2 font-semibold text-white">Name</th>
+                            <th className="text-left px-3 py-2 font-semibold text-white">Type</th>
+                            <th className="text-center px-3 py-2 font-semibold w-20 text-white">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -165,9 +165,9 @@ function MaterialRow({
     if (!isEditing) {
         return (
             <tr className="border-b hover:bg-gray-50">
-                <td className="px-3 py-2">{material.name}</td>
+                <td className="px-3 py-2 text-white">{material.name}</td>
                 <td className="px-3 py-2">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                    <span className="px-2 py-1 text-white text-xs">
                         {material.type}
                     </span>
                 </td>
@@ -175,15 +175,15 @@ function MaterialRow({
                     <div className="flex items-center justify-center gap-1">
                         <button
                             onClick={onEdit}
-                            className="p-1 hover:bg-blue-100 rounded text-blue-600"
-                            title="Edit"
+                            className="cursor-pointer p-1 hover:bg-blue-100 rounded text-white"
+                            title="Edit Material"
                         >
                             <Edit2 className="w-3 h-3" />
                         </button>
                         <button
                             onClick={onDelete}
-                            className="p-1 hover:bg-red-100 rounded text-red-600"
-                            title="Delete"
+                            className="cursor-pointer p-1 hover:bg-red-100 rounded text-white"
+                            title="Delete Material"
                         >
                             <Trash2 className="w-3 h-3" />
                         </button>
@@ -194,84 +194,92 @@ function MaterialRow({
     }
 
     return (
-        <tr className="border-b bg-blue-50">
-            <td className="px-3 py-2">
-                <input
-                    type="text"
-                    value={material.name}
-                    onChange={(e) => onChange?.({ ...material, name: e.target.value })}
-                    className="w-full px-2 py-1 border rounded text-xs"
-                    placeholder="Material name"
-                />
-            </td>
-            <td className="px-3 py-2">
-                <select
-                    value={material.type}
-                    onChange={(e) => onTypeChange?.(e.target.value as MaterialType)}
-                    className="w-full px-2 py-1 border rounded text-xs"
-                >
-                    <option value="Steel">Steel</option>
-                    <option value="Concrete">Concrete</option>
-                    <option value="LinearElastic">Linear Elastic</option>
-                </select>
-            </td>
-            <td className="px-3 py-2" colSpan={2}>
-                <div className="grid grid-cols-2 gap-2">
+        <tr className="border-b">
+            <td className="px-3 py-2 flex flex-col gap-2">
+                <div>
                     <div>
-                        <label className="text-[10px] text-gray-600">E (MPa)</label>
+                        <label className="text-[10px] text-white">Name</label>
+                        <input
+                            type="text"
+                            value={material.name}
+                            onChange={(e) => onChange?.({ ...material, name: e.target.value })}
+                            className="input"
+                            placeholder="Material name"
+                        />
+                    </div>
+                </div>
+                <div>
+                    <div>
+                        <label className="text-[10px] text-white">Type</label>
+                        <select
+                            value={material.type}
+                            onChange={(e) => onTypeChange?.(e.target.value as MaterialType)}
+                            className="input"
+                        >
+                            <option value="Steel">Steel</option>
+                            <option value="Concrete">Concrete</option>
+                            <option value="LinearElastic">Linear Elastic</option>
+                        </select>
+                    </div>
+                </div>
+            </td>
+            <td className="px-3 py-2">
+                <div className="gap-2">
+                    <div>
+                        <label className="text-[10px] text-white">E (MPa)</label>
                         <input
                             type="number"
                             value={material.E}
                             onChange={(e) => onChange?.({ ...material, E: Number(e.target.value) })}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-gray-600">G (MPa)</label>
+                        <label className="text-[10px] text-white">G (MPa)</label>
                         <input
                             type="number"
                             value={material.G}
                             onChange={(e) => onChange?.({ ...material, G: Number(e.target.value) })}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-gray-600">Poisson</label>
+                        <label className="text-[10px] text-white">Poisson</label>
                         <input
                             type="number"
                             step="0.01"
                             value={material.poisson}
                             onChange={(e) => onChange?.({ ...material, poisson: Number(e.target.value) })}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                     <div>
-                        <label className="text-[10px] text-gray-600">Density (kg/m³)</label>
+                        <label className="text-[10px] text-white">Density (kg/m³)</label>
                         <input
                             type="number"
                             value={material.density}
                             onChange={(e) => onChange?.({ ...material, density: Number(e.target.value) })}
-                            className="w-full px-2 py-1 border rounded text-xs"
+                            className="input"
                         />
                     </div>
                     {material.type === 'Steel' && (
                         <>
                             <div>
-                                <label className="text-[10px] text-gray-600">fy (MPa)</label>
+                                <label className="text-[10px] text-white">fy (MPa)</label>
                                 <input
                                     type="number"
                                     value={(material as SteelMaterial).fy}
                                     onChange={(e) => onChange?.({ ...material, fy: Number(e.target.value) })}
-                                    className="w-full px-2 py-1 border rounded text-xs"
+                                    className="input"
                                 />
                             </div>
                             <div>
-                                <label className="text-[10px] text-gray-600">fu (MPa)</label>
+                                <label className="text-[10px] text-white">fu (MPa)</label>
                                 <input
                                     type="number"
                                     value={(material as SteelMaterial).fu}
                                     onChange={(e) => onChange?.({ ...material, fu: Number(e.target.value) })}
-                                    className="w-full px-2 py-1 border rounded text-xs"
+                                    className="input"
                                 />
                             </div>
                         </>
@@ -279,38 +287,38 @@ function MaterialRow({
                     {material.type === 'Concrete' && (
                         <>
                             <div>
-                                <label className="text-[10px] text-gray-600">fc (MPa)</label>
+                                <label className="text-[10px] text-white">fc (MPa)</label>
                                 <input
                                     type="number"
                                     value={(material as ConcreteMaterial).fc}
                                     onChange={(e) => onChange?.({ ...material, fc: Number(e.target.value) })}
-                                    className="w-full px-2 py-1 border rounded text-xs"
+                                    className="input"
                                 />
                             </div>
                             <div>
-                                <label className="text-[10px] text-gray-600">ft (MPa)</label>
+                                <label className="text-[10px] text-white">ft (MPa)</label>
                                 <input
                                     type="number"
                                     value={(material as ConcreteMaterial).ft}
                                     onChange={(e) => onChange?.({ ...material, ft: Number(e.target.value) })}
-                                    className="w-full px-2 py-1 border rounded text-xs"
+                                    className="input"
                                 />
                             </div>
                         </>
                     )}
                 </div>
             </td>
-            <td className="px-3 py-2">
-                <div className="flex flex-col gap-1">
+            <td className="px-3 py-2 h-full flex items-start">
+                <div className="flex flex-col items-center justify-start gap-1">
                     <button
                         onClick={onSave}
-                        className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium"
+                        className="cursor-pointer px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium"
                     >
                         Save
                     </button>
                     <button
                         onClick={onCancel}
-                        className="px-2 py-1 bg-gray-400 hover:bg-gray-500 text-white rounded text-xs font-medium"
+                        className="cursor-pointer px-2 py-1 bg-gray-400 hover:bg-gray-500 text-white rounded text-xs font-medium"
                     >
                         Cancel
                     </button>
