@@ -23,10 +23,11 @@ import {
   type DistributedFrameLoad,
   type AreaLoad,
 } from './types/structuralTypes';
-import { Book, ChevronDown, Play } from 'lucide-react';
+import { Book, ChevronDown, Play, Save, FolderOpen } from 'lucide-react';
 import { analyzeStructure, combineResults } from './utils/feaSolver';
 import { DisplacementLegendPanel } from './components/panels/DisplacementLegendPanel';
 import type { AnalysisResultMap } from './types/structuralTypes';
+import { importFromDxf } from './utils/dxfImporter';
 
 function App() {
   const [model, setModel] = useState<StructuralModel>(INITIAL_TEMPLATE_MODEL);
@@ -60,6 +61,7 @@ function App() {
   const [showGlobalAxes, setShowGlobalAxes] = useState(true);
   const [showJointLabels, setShowJointLabels] = useState(true);
   const [showFrameLabels, setShowFrameLabels] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
 
   // Material handlers
   const addMaterial = (material: Material) => {
@@ -405,6 +407,69 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [uiState.modelingMode, uiState.tempShellJoints, model.shells]);
 
+  const handleImportDxf = (dxfContent: string) => {
+    try {
+      const maxJointId = model.joints.length > 0 ? Math.max(...model.joints.map(j => j.id)) : 0;
+      const maxFrameId = model.frames.length > 0 ? Math.max(...model.frames.map(f => f.id)) : 0;
+
+      const { joints: newJoints, frames: newFrames } = importFromDxf(dxfContent, maxJointId, maxFrameId);
+
+      if (newJoints.length === 0) {
+        alert("No line entities found in DXF.");
+        return;
+      }
+
+      setModel(prev => ({
+        ...prev,
+        joints: [...prev.joints, ...newJoints],
+        frames: [...prev.frames, ...newFrames]
+      }));
+
+      alert(`Successfully imported ${newJoints.length} joints and ${newFrames.length} frames.`);
+    } catch (err) {
+      console.error(err);
+      alert("Error importing DXF: " + (err instanceof Error ? err.message : "Unknown error"));
+    }
+  };
+
+  const handleSaveProject = () => {
+    const data = JSON.stringify(model, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Project_${Date.now()}.dsys`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleOpenProject = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        const projectData = JSON.parse(content);
+        // Basic validation
+        if (projectData.joints && projectData.frames && projectData.materials) {
+          setModel(projectData);
+          setAnalysisResults(null);
+          setActiveResultId(null);
+          alert('Project loaded successfully!');
+        } else {
+          alert('Invalid .dsys file format');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error parsing project file');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset input
+  };
+
   return (
     <div className="flex flex-col h-screen w-full bg-gray-100 text-gray-900 overflow-hidden font-sans">
       {/* Header */}
@@ -424,6 +489,23 @@ function App() {
           </div>
         </div>
         <div className="ml-auto flex items-center gap-4">
+          <label className="cursor-pointer flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg border border-gray-700 transition-all text-xs font-medium">
+            <FolderOpen className="text-white w-4 h-4" />
+            Open Project
+            <input
+              type="file"
+              accept=".dsys"
+              className="hidden"
+              onChange={handleOpenProject}
+            />
+          </label>
+          <button
+            onClick={handleSaveProject}
+            className="cursor-pointer flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg border border-gray-700 transition-all text-xs font-medium"
+          >
+            <Save className="text-white w-4 h-4" />
+            Save Project
+          </button>
           <a
             href="https://docs.daharengineer.com"
             target="_blank"
@@ -484,6 +566,7 @@ function App() {
           onToggleFrameCreateMode={toggleFrameCreateMode}
           onDeleteShell={deleteShell}
           onToggleShellCreateMode={toggleShellCreateMode}
+          onImportDxf={handleImportDxf}
         />
 
         {/* 3D Viewer */}
@@ -520,6 +603,7 @@ function App() {
             showGlobalAxes={showGlobalAxes}
             showJointLabels={showJointLabels}
             showFrameLabels={showFrameLabels}
+            showGrid={showGrid}
           />
 
           {/* Viewport Controls */}
@@ -715,6 +799,17 @@ function App() {
                       className={`w-12 h-6 rounded-full relative transition-all ${showFrameLabels ? 'bg-blue-600' : 'bg-gray-300'}`}
                     >
                       <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showFrameLabels ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
+
+                  {/* Show Grid */}
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <span className="text-gray-600">Grid</span>
+                    <button
+                      onClick={() => setShowGrid(!showGrid)}
+                      className={`w-12 h-6 rounded-full relative transition-all ${showGrid ? 'bg-blue-600' : 'bg-gray-300'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showGrid ? 'left-7' : 'left-1'}`} />
                     </button>
                   </div>
 

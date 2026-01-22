@@ -82,6 +82,7 @@ interface InputPanelProps {
 
     onDeleteShell: (id: number) => void;
     onToggleShellCreateMode: () => void;
+    onImportDxf?: (dxfContent: string) => void;
 }
 
 export const InputPanel: React.FC<InputPanelProps> = ({
@@ -128,8 +129,23 @@ export const InputPanel: React.FC<InputPanelProps> = ({
     onToggleFrameCreateMode,
     onDeleteShell,
     onToggleShellCreateMode,
+    onImportDxf,
 }) => {
     const [isPanelOpen, setIsPanelOpen] = useState(true);
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !onImportDxf) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const content = event.target?.result as string;
+            onImportDxf(content);
+        };
+        reader.readAsText(file);
+        // Reset input
+        e.target.value = '';
+    };
     return (
         <div className="absolute top-0 h-full overflow-y-auto w-full no-scrollbar flex">
             <div className={`absolute top-16 left-0 bottom-0 h-[calc(100%-4rem)] w-fit bg-primary shadow-lg rounded-r-lg z-100 flex gap-1 border-b pb-2 transition ${isPanelOpen ? "translate-x-100" : "translate-x-0"}`}>
@@ -216,8 +232,8 @@ export const InputPanel: React.FC<InputPanelProps> = ({
                     </div>
                 </div>
             </div>
-
-            <div className="absolute top-0 left-0 h-16 w-full bg-primary z-100"></div>
+            {/* 
+            <div className="absolute top-0 left-0 h-16 w-full bg-primary z-100"></div> */}
             <div className={`absolute top-16 left-0 bottom-0 h-[calc(100%-4rem)] flex flex-col gap-4 w-100 z-100 p-4 bg-primary border-r border-gray-700 transition ${isPanelOpen ? "translate-x-0" : "-translate-x-100"}`}>
 
                 {activeTab === 'materials' && (
@@ -322,6 +338,19 @@ export const InputPanel: React.FC<InputPanelProps> = ({
                             >
                                 Shells
                             </button>
+                        </div>
+
+                        {/* DXF Import UI */}
+                        <div className="px-1">
+                            <label className="cursor-pointer block w-full px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white text-[10px] font-medium rounded border border-gray-700 text-center transition-colors">
+                                Import from DXF
+                                <input
+                                    type="file"
+                                    accept=".dxf"
+                                    className="hidden"
+                                    onChange={handleFileUpload}
+                                />
+                            </label>
                         </div>
 
                         {modelTab === 'joints' && (

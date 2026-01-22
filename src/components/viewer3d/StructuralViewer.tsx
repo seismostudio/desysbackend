@@ -41,6 +41,7 @@ interface StructuralViewerProps {
     showGlobalAxes: boolean;
     showJointLabels: boolean;
     showFrameLabels: boolean;
+    showGrid: boolean;
 }
 
 export function StructuralViewer({
@@ -73,6 +74,7 @@ export function StructuralViewer({
     showGlobalAxes,
     showJointLabels,
     showFrameLabels,
+    showGrid,
 }: StructuralViewerProps) {
     const [hoverJoint, setHoverJoint] = useState<number | null>(null);
     const [cursorPos, setCursorPos] = useState<THREE.Vector3 | null>(null);
@@ -94,7 +96,7 @@ export function StructuralViewer({
         >
             <ambientLight intensity={0.5} />
             <directionalLight position={[10, 10, 5]} intensity={0.8} />
-            <Grid args={[100, 100]} cellSize={1} cellColor="#0255e6" sectionColor="#b9b9b9" />
+            {showGrid && <Grid args={[100, 100]} cellSize={1} cellColor="#0255e6" sectionColor="#b9b9b9" />}
             <OrbitControls makeDefault />
 
             {/* Force Diagrams */}
@@ -525,8 +527,8 @@ function FrameLine({
             {/* Selection Highlight if selected */}
             {isSelected && (
                 <mesh>
-                    <cylinderGeometry args={[0.05, 0.05, length, 8]} />
-                    <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0} transparent opacity={0} />
+                    <cylinderGeometry args={[0.06, 0.06, length, 8]} />
+                    <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0} transparent opacity={1} />
                 </mesh>
             )}
 

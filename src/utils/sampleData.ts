@@ -116,73 +116,73 @@ export const SAMPLE_LOAD_COMBINATIONS: LoadCombination[] = [
 ];
 
 export const SAMPLE_JOINTS: Joint[] = [
-    { id: 1, x: 0, y: 0, z: 0, restraint: FIXED_RESTRAINT },
-    { id: 2, x: 5, y: 0, z: 0, restraint: FIXED_RESTRAINT },
-    { id: 3, x: 0, y: 0, z: 5, restraint: FIXED_RESTRAINT },
-    { id: 4, x: 5, y: 0, z: 5, restraint: FIXED_RESTRAINT },
-    { id: 5, x: 0, y: 4, z: 0 },
-    { id: 6, x: 5, y: 4, z: 0 },
-    { id: 7, x: 0, y: 4, z: 5 },
-    { id: 8, x: 5, y: 4, z: 5 },
-    { id: 9, x: 5, y: 4, z: 7 },
-    { id: 10, x: 0, y: 4, z: 7 },
-    { id: 11, x: 0, y: 7.5, z: 0 },
-    { id: 12, x: 5, y: 7.5, z: 0 },
-    { id: 13, x: 0, y: 7.5, z: 5 },
-    { id: 14, x: 5, y: 7.5, z: 5 },
+    // { id: 1, x: 0, y: 0, z: 0, restraint: FIXED_RESTRAINT },
+    // { id: 2, x: 5, y: 0, z: 0, restraint: FIXED_RESTRAINT },
+    // { id: 3, x: 0, y: 0, z: 5, restraint: FIXED_RESTRAINT },
+    // { id: 4, x: 5, y: 0, z: 5, restraint: FIXED_RESTRAINT },
+    // { id: 5, x: 0, y: 4, z: 0 },
+    // { id: 6, x: 5, y: 4, z: 0 },
+    // { id: 7, x: 0, y: 4, z: 5 },
+    // { id: 8, x: 5, y: 4, z: 5 },
+    // { id: 9, x: 5, y: 4, z: 7 },
+    // { id: 10, x: 0, y: 4, z: 7 },
+    // { id: 11, x: 0, y: 7.5, z: 0 },
+    // { id: 12, x: 5, y: 7.5, z: 0 },
+    // { id: 13, x: 0, y: 7.5, z: 5 },
+    // { id: 14, x: 5, y: 7.5, z: 5 },
 ];
 
 export const SAMPLE_FRAMES: Frame[] = [
-    // Columns
-    { id: 1, jointI: 1, jointJ: 5, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
-    { id: 2, jointI: 2, jointJ: 6, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
-    { id: 3, jointI: 3, jointJ: 7, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
-    { id: 4, jointI: 4, jointJ: 8, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
-    // Beams strong direction
-    { id: 5, jointI: 5, jointJ: 6, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
-    { id: 6, jointI: 7, jointJ: 8, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
-    // Beams weak direction
-    { id: 7, jointI: 5, jointJ: 7, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
-    { id: 8, jointI: 6, jointJ: 8, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
-    // Beams strong direction
-    { id: 9, jointI: 7, jointJ: 10, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
-    { id: 10, jointI: 8, jointJ: 9, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
-    { id: 11, jointI: 10, jointJ: 9, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
-    // Beams strong direction
-    { id: 12, jointI: 11, jointJ: 12, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
-    { id: 13, jointI: 13, jointJ: 14, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
-    // Beams weak direction
-    { id: 14, jointI: 11, jointJ: 13, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
-    { id: 15, jointI: 12, jointJ: 14, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
-    // Columns
-    { id: 16, jointI: 5, jointJ: 11, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
-    { id: 17, jointI: 6, jointJ: 12, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
-    { id: 18, jointI: 7, jointJ: 13, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
-    { id: 19, jointI: 8, jointJ: 14, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // // Columns
+    // { id: 1, jointI: 1, jointJ: 5, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // { id: 2, jointI: 2, jointJ: 6, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // { id: 3, jointI: 3, jointJ: 7, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // { id: 4, jointI: 4, jointJ: 8, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // // Beams strong direction
+    // { id: 5, jointI: 5, jointJ: 6, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // { id: 6, jointI: 7, jointJ: 8, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // // Beams weak direction
+    // { id: 7, jointI: 5, jointJ: 7, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // { id: 8, jointI: 6, jointJ: 8, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // // Beams strong direction
+    // { id: 9, jointI: 7, jointJ: 10, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // { id: 10, jointI: 8, jointJ: 9, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // { id: 11, jointI: 10, jointJ: 9, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // // Beams strong direction
+    // { id: 12, jointI: 11, jointJ: 12, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // { id: 13, jointI: 13, jointJ: 14, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // // Beams weak direction
+    // { id: 14, jointI: 11, jointJ: 13, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // { id: 15, jointI: 12, jointJ: 14, sectionId: 'sec-beam-1', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // // Columns
+    // { id: 16, jointI: 5, jointJ: 11, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // { id: 17, jointI: 6, jointJ: 12, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // { id: 18, jointI: 7, jointJ: 13, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
+    // { id: 19, jointI: 8, jointJ: 14, sectionId: 'sec-column-2', orientation: 0, offsetY: 0, offsetZ: 0 },
 ];
 
 export const SAMPLE_SHELLS: Shell[] = [
-    { id: 1, jointIds: [5, 6, 8, 7], sectionId: 'sec-slab-1', offsetZ: 0 },
+    // { id: 1, jointIds: [5, 6, 8, 7], sectionId: 'sec-slab-1', offsetZ: 0 },
 ];
 
 // Sample Loads
 export const SAMPLE_POINT_LOADS = [
     // Gravity loads on roof level
-    { id: 'pl-1', jointId: 5, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-2', jointId: 6, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-3', jointId: 7, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-4', jointId: 8, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-5', jointId: 6, patternId: 'pat-dead1', fx: 0, fy: 0, fz: 20, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-6', jointId: 10, patternId: 'pat-dead1', fx: 0, fy: -20, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-7', jointId: 9, patternId: 'pat-dead1', fx: 0, fy: -20, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-8', jointId: 11, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-9', jointId: 12, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-10', jointId: 13, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
-    { id: 'pl-11', jointId: 14, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-1', jointId: 5, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-2', jointId: 6, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-3', jointId: 7, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-4', jointId: 8, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-5', jointId: 6, patternId: 'pat-dead1', fx: 0, fy: 0, fz: 20, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-6', jointId: 10, patternId: 'pat-dead1', fx: 0, fy: -20, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-7', jointId: 9, patternId: 'pat-dead1', fx: 0, fy: -20, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-8', jointId: 11, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-9', jointId: 12, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-10', jointId: 13, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
+    // { id: 'pl-11', jointId: 14, patternId: 'pat-dead1', fx: 0, fy: -10, fz: 0, mx: 0, my: 0, mz: 0 },
 ];
 
 export const SAMPLE_DISTRIBUTED_FRAME_LOADS: DistributedFrameLoad[] = [
-    { id: 'dl-1', frameId: 12, patternId: 'pat-live', direction: 'Gravity', loadType: 'Uniform', startMagnitude: 10, endMagnitude: 10, startDistance: 0, endDistance: 10 },
+    // { id: 'dl-1', frameId: 12, patternId: 'pat-live', direction: 'Gravity', loadType: 'Uniform', startMagnitude: 10, endMagnitude: 10, startDistance: 0, endDistance: 10 },
 ];
 
 export const INITIAL_TEMPLATE_MODEL: StructuralModel = {

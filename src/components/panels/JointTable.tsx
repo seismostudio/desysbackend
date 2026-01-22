@@ -56,7 +56,7 @@ export function JointTable({ joints, onAdd, onUpdate, onDelete, selectedJointId,
                 </button>
             </div>
 
-            <div className="border rounded-lg overflow-hidden bg-gray-800 h-fit overflow-y-auto no-scrollbar">
+            <div className="border rounded-lg overflow-hidden bg-gray-800  h-[calc(100vh-250px)] overflow-y-auto no-scrollbar">
                 <table className="w-full text-[10px]">
                     <thead className="bg-gray-700 border-b sticky top-0">
                         <tr>

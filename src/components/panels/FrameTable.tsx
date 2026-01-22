@@ -24,7 +24,7 @@ export function FrameTable({
     isCreating,
 }: FrameTableProps) {
     return (
-        <div className="flex flex-col gap-2 ">
+        <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
                 <h4 className="font-semibold text-xs uppercase tracking-wider text-white">Frames</h4>
                 <button
@@ -45,7 +45,7 @@ export function FrameTable({
                 </div>
             )}
 
-            <div className="border rounded-lg overflow-hidden bg-gray-800 h-fit overflow-y-auto no-scrollbar">
+            <div className="border rounded-lg bg-gray-800 h-[calc(100vh-250px)] overflow-y-auto no-scrollbar">
                 <table className="w-full text-[10px]">
                     <thead className="bg-gray-700 border-b sticky top-0">
                         <tr>
