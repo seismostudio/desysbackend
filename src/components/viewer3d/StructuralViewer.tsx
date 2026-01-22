@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Grid } from '@react-three/drei';
+import { OrbitControls, Grid, Html } from '@react-three/drei';
 import { useState, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import type { Joint, Frame, Shell, FrameSection, ShellSection, ModelingMode, AnalysisResults, PointLoad, DistributedFrameLoad, AreaLoad, LoadPattern } from '../../types/structuralTypes';
@@ -38,6 +38,9 @@ interface StructuralViewerProps {
     areaLoads: AreaLoad[];
     loadPatterns: LoadPattern[];
     forceType: string;
+    showGlobalAxes: boolean;
+    showJointLabels: boolean;
+    showFrameLabels: boolean;
 }
 
 export function StructuralViewer({
@@ -67,6 +70,9 @@ export function StructuralViewer({
     areaLoads,
     loadPatterns,
     forceType,
+    showGlobalAxes,
+    showJointLabels,
+    showFrameLabels,
 }: StructuralViewerProps) {
     const [hoverJoint, setHoverJoint] = useState<number | null>(null);
     const [cursorPos, setCursorPos] = useState<THREE.Vector3 | null>(null);
@@ -111,12 +117,15 @@ export function StructuralViewer({
                         <JointSphere
                             key={joint.id}
                             joint={joint}
+                            restraint={joint.restraint}
                             isSelected={selectedJointId === joint.id}
                             isHovered={hoverJoint === joint.id}
                             isTempSelected={tempShellJoints.includes(joint.id) || tempFrameStartJoint === joint.id}
+                            isRestraint={joint.restraint?.ux && joint.restraint?.uy && joint.restraint?.uz && joint.restraint?.rx && joint.restraint?.ry && joint.restraint?.rz}
                             onClick={() => onJointClick(joint.id)}
                             onHover={() => setHoverJoint(joint.id)}
                             onUnhover={() => setHoverJoint(null)}
+                            showLabel={showJointLabels}
                         />
                     ))}
 
@@ -138,6 +147,7 @@ export function StructuralViewer({
                                 isSelected={selectedFrameId === frame.id}
                                 extrudeMode={extrudeMode}
                                 onClick={() => onFrameClick(frame.id)}
+                                showLabel={showFrameLabels}
                             />
                         );
                     })}
@@ -180,6 +190,9 @@ export function StructuralViewer({
                     )}
                 </>
             )}
+
+            {/* Global Axis Helper */}
+            {showGlobalAxes && <GlobalAxisHelper />}
 
             {/* DEFORMED GEOMETRY RENDERING */}
             {showDeformation && analysisResults && (
@@ -291,23 +304,45 @@ export function StructuralViewer({
 // Joint Sphere Component
 function JointSphere({
     joint,
+    restraint,
     isSelected,
     isHovered,
     isTempSelected,
+    isRestraint,
     onClick,
     onHover,
     onUnhover,
+    showLabel,
 }: {
     joint: Joint;
+    restraint: Joint['restraint'];
     isSelected: boolean;
     isHovered: boolean;
     isTempSelected: boolean;
+    isRestraint: boolean | undefined;
     onClick: (isDoubleClick?: boolean) => void;
     onHover: () => void;
     onUnhover: () => void;
+    showLabel: boolean;
 }) {
-    const color = isSelected ? '#3b82f6' : isTempSelected ? '#10b981' : isHovered ? '#f59e0b' : '#6b7280';
+
+    const fixed = restraint?.ux && restraint?.uy && restraint?.uz && restraint?.rx && restraint?.ry && restraint?.rz;
+
+    const color = isTempSelected ? '#10b981' : isHovered ? '#f59e0b' : isRestraint ? (fixed ? '#f20b0b' : '#806b6bff') : '#6b7280';
     const scale = isSelected || isHovered ? 0.6 : 0.5;
+
+    // Restraint Mesh
+    const restraintMesh = useMemo(() => {
+
+        let geometry: THREE.BufferGeometry | THREE.Group;
+        const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.4, roughness: 0.4, opacity: 0.5 });
+        const width = 0.7;
+        const height = 0.7;
+        const length = 0.2;
+        geometry = new THREE.BoxGeometry(width, length, height);
+
+        return new THREE.Mesh(geometry as THREE.BufferGeometry, mat);
+    }, [length, color]);
 
     return (
         <mesh
@@ -329,6 +364,16 @@ function JointSphere({
         >
             <sphereGeometry args={[0.1, 16, 16]} />
             <meshStandardMaterial color={color} />
+
+            {restraint && <primitive object={restraintMesh} />}
+
+            {showLabel && (
+                <Html position={[0, 0, 0]} zIndexRange={[80, 0]}>
+                    <div className="px-2 py-1 rounded text-md font-mono pointer-events-none">
+                        {joint.id}
+                    </div>
+                </Html>
+            )}
         </mesh>
     );
 }
@@ -342,6 +387,7 @@ function FrameLine({
     isSelected,
     extrudeMode,
     onClick,
+    showLabel,
 }: {
     frame: Frame;
     jointI: Joint;
@@ -350,6 +396,7 @@ function FrameLine({
     isSelected: boolean;
     extrudeMode: boolean;
     onClick: (isDoubleClick?: boolean) => void;
+    showLabel: boolean;
 }) {
     const color = section ? section.color : '#9ca3af';
     const lineWidth = isSelected ? 4 : 2;
@@ -471,7 +518,7 @@ function FrameLine({
                     onClick(true);
                 }}
             >
-                <cylinderGeometry args={[0.1, 0.1, length, 8]} />
+                <cylinderGeometry args={[0.05, 0.05, length * 0.8, 8]} />
                 <meshStandardMaterial transparent opacity={0} />
             </mesh>
 
@@ -481,6 +528,14 @@ function FrameLine({
                     <cylinderGeometry args={[0.05, 0.05, length, 8]} />
                     <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0} transparent opacity={0} />
                 </mesh>
+            )}
+
+            {showLabel && (
+                <Html position={[0, 0, 0]} zIndexRange={[80, 0]} center>
+                    <div className="px-1 py-0.5 rounded text-xs font-bold pointer-events-none">
+                        F{frame.id}
+                    </div>
+                </Html>
             )}
         </group>
     );
@@ -622,5 +677,55 @@ function CursorTracker({ onMove }: { onMove: (pos: THREE.Vector3) => void }) {
             <planeGeometry args={[1000, 1000]} />
             <meshBasicMaterial transparent opacity={0} />
         </mesh>
+    );
+}
+
+// Global Axis Helper
+function GlobalAxisHelper() {
+    const locLabelX = useMemo(() => {
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(2, 0, 0)
+        ]);
+        const material = new THREE.LineBasicMaterial({ color: '#10b981', linewidth: 2 });
+        return new THREE.Line(geometry, material);
+    }, []);
+    const locLabelY = useMemo(() => {
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0, 2, 0)
+        ]);
+        const material = new THREE.LineBasicMaterial({ color: '#10b981', linewidth: 2 });
+        return new THREE.Line(geometry, material);
+    }, []);
+    const locLabelZ = useMemo(() => {
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0, 0, 2)
+        ]);
+        const material = new THREE.LineBasicMaterial({ color: '#10b981', linewidth: 2 });
+        return new THREE.Line(geometry, material);
+    }, []);
+    return (
+        <group>
+            <primitive object={locLabelX} />
+            <primitive object={locLabelY} />
+            <primitive object={locLabelZ} />
+            <Html position={[2.5, 0, 0]} center zIndexRange={[100, 0]}>
+                <div className="px-2 py-1 rounded text-md font-mono pointer-events-none whitespace-nowrap">
+                    X
+                </div>
+            </Html>
+            <Html position={[0, 2.5, 0]} center zIndexRange={[100, 0]}>
+                <div className="px-2 py-1 rounded text-md font-mono pointer-events-none whitespace-nowrap">
+                    Y
+                </div>
+            </Html>
+            <Html position={[0, 0, 2.5]} center zIndexRange={[100, 0]}>
+                <div className="px-2 py-1 rounded text-md font-mono pointer-events-none whitespace-nowrap">
+                    Z
+                </div>
+            </Html>
+        </group>
     );
 }

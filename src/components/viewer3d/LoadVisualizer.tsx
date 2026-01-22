@@ -133,7 +133,7 @@ export function LoadVisualizer({
                         />
 
                         {/* Label */}
-                        <Html position={[position.x + load.fx / 9, position.y + load.fy / 9, position.z + load.fz / 9]} center>
+                        <Html position={[position.x + load.fx / 9, position.y + load.fy / 9, position.z + load.fz / 9]} center zIndexRange={[50, 0]}>
                             <div className="bg-white/80 px-2 py-1 rounded text-[10px] font-mono border border-gray-300 pointer-events-none whitespace-nowrap">
                                 {forceMag.toFixed(1)} kN
                             </div>
@@ -234,19 +234,19 @@ export function LoadVisualizer({
                             </div>
                         </Html> */}
                         {load.startMagnitude > load.endMagnitude && (
-                            <Html position={dStart} center>
+                            <Html position={dStart} center zIndexRange={[100, 0]}>
                                 <div className="bg-white/80 px-1 rounded text-[9px] font-mono border border-gray-300 pointer-events-none whitespace-nowrap">
                                     {load.startMagnitude.toFixed(2)}
                                 </div>
                             </Html>)}
                         {load.startMagnitude === load.endMagnitude && (
-                            <Html position={dMid} center>
+                            <Html position={dMid} center zIndexRange={[100, 0]}>
                                 <div className="bg-white/80 px-1 rounded text-[9px] font-mono border border-gray-300 pointer-events-none whitespace-nowrap">
                                     {load.startMagnitude.toFixed(2)}
                                 </div>
                             </Html>)}
                         {Math.abs(load.startMagnitude - load.endMagnitude) > 0.01 && (
-                            <Html position={dEnd} center>
+                            <Html position={dEnd} center zIndexRange={[100, 0]}>
                                 <div className="bg-white/80 px-1 rounded text-[9px] font-mono border border-gray-300 pointer-events-none whitespace-nowrap">
                                     {load.endMagnitude.toFixed(2)}
                                 </div>

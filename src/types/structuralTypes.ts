@@ -312,9 +312,20 @@ export interface AnalysisResults {
   maxDisplacement: number;
   frameForces: FrameForces[];
   shellStresses: ShellStresses[];
+  reactions: JointReaction[]; // Calculated joint reactions
   isValid: boolean;
   timestamp: number;
   log: string[];
+}
+
+export interface JointReaction {
+  jointId: number;
+  fx: number; // kN (using standard unit)
+  fy: number; // kN
+  fz: number; // kN
+  mx: number; // kNm
+  my: number; // kNm
+  mz: number; // kNm
 }
 
 export type AnalysisResultMap = Record<string, AnalysisResults>;

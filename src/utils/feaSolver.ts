@@ -106,7 +106,7 @@ export function analyzeStructure(
         const dofPerNode = 6;
         const totalDOF = nodeCount * dofPerNode;
 
-        // 2. Initialize Global Stiffness Matrix and Load Vector
+        // 2. Global Stiffness Matrix and Load Vector
         log.push(`System DOF: ${totalDOF}`);
 
         const K = zeros(totalDOF, totalDOF);
@@ -190,8 +190,7 @@ export function analyzeStructure(
                         const totalWeight = w * L; // Newtons
 
                         // Distribute half to each node (Lumped Mass approach)
-                        // Apply in GLOBAL Y direction (Gravity acts down, -Y)
-                        // Confirmed by user and sample data that Y is vertical axis.
+                        // Apply in GLOBAL Y direction (Gravity = -Y)
 
                         const nodalLoad = (totalWeight / 2) * scale;
 
@@ -227,16 +226,6 @@ export function analyzeStructure(
                 const frame = model.frames.find(f => f.id === load.frameId);
                 if (!frame) continue;
 
-
-
-                // Let's iterate ALL solver frames and check if they belong to this frame
-                // Since we don't have a direct map 'originalFrameId' on 'solverFrame', we need to check geometry or
-                // assume 'frameMapping' helps?
-                // frameMapping was defined in the viewer usage but maybe not here?
-                // Let's check `frameMapping` availability.
-                // It IS used in line 288: `Object.keys(frameMapping).forEach...`
-                // So frameMapping exists!
-
                 const mapping = frameMapping[frame.id];
                 if (!mapping) continue;
 
@@ -249,7 +238,6 @@ export function analyzeStructure(
                 );
 
                 // Iterate over segments defined in frameMapping
-                // mapping.jointIndices gives the indices in 'solverJoints'
                 for (let i = 0; i < mapping.jointIndices.length - 1; i++) {
                     const idxA = mapping.jointIndices[i];
                     const idxB = mapping.jointIndices[i + 1];
@@ -296,11 +284,9 @@ export function analyzeStructure(
                     } else if (load.direction === 'Gravity') {
                         fy = -1; // Gravity is usually -Y
                     } else if (load.direction.startsWith('Local')) {
+
+
                         // Calculate Local Axes
-                        // We need the frame's local axes.
-                        // Assuming frame orientation etc. is consistent for the whole frame.
-                        // Helper `getLocalAxes` would be useful, but might not be imported.
-                        // We can re-calculate or assume vertical alignment.
                         // Standard FEM local axes:
                         // x' = along member (nodeA -> nodeB)
                         // y', z' defined by orientation angle.
@@ -311,19 +297,6 @@ export function analyzeStructure(
                         // Normalized structure axis (Local x)
                         const L_vec = Math.sqrt(dx * dx + dy * dy + dz * dz);
                         const ux_local = [dx / L_vec, dy / L_vec, dz / L_vec];
-
-                        // Local y and z depend on orientation
-                        // Simplified implementation if getLocalAxes is not available:
-                        // Use a basic "up" vector to find Local Y/Z.
-                        // Ideally we should import `getOrientedLocalAxes` from `../utils/frameGeometry`.
-                        // For now, I will assume a vertical up vector [0, 1, 0] to cross with x' for z', then y' = z' cross x'.
-
-                        // Let's TRY to just use Global approximation if import is hard, 
-                        // BUT user specifically asked for "Local X/Y/Z".
-                        // I will add a helper function for local axes at the bottom of the file if needed, 
-                        // or trust `u_local` derivation.
-
-                        // ... (I will include a basic Local Axis implementation right here to be safe)
 
                         // Local x
                         const lx = ux_local;
@@ -390,13 +363,7 @@ export function analyzeStructure(
         // 4. Apply Boundary Conditions
         const freeDOFs: number[] = [];
 
-        // We need to map free DOFs to their original indices in the FULL system
-        // to correctly extract results later.
-        // Actually, solveLinearSystem handles specific size.
-        // So we need to build K_reduced and F_reduced.
-
-        // Identifying restrained DOFs
-        // We will just push valid free DOF indices to `freeDOFs` list.
+        // Identifying restrained DOF
         for (let i = 0; i < nodeCount; i++) {
             const joint = solverJoints[i];
             const restraint = joint.restraint || getDefaultRestraint();
@@ -469,47 +436,17 @@ export function analyzeStructure(
                 stations: indices.map((_, i) => i / (indices.length - 1)),
                 displacements: detailedDisps,
                 forces: indices.map((_) => {
-                    // For now, return zero forces. Real implementation requires:
-                    // 1. Recovering element end forces for each segment (k * u_local)
-                    // 2. Integrating distributed loads along the segment
-
-                    // Since we essentially effectively meshed the frame into segments (solverFrames), 
-                    // each segment's end forces ARE the internal forces at the nodes.
-                    // We can recover forces from the global displacement vector `u_full` and segment stiffness `K_local`.
-
-                    // We need to find the specific solverFrame (segment) that corresponds to this interval [i, i+1].
-                    // indices[i] is the start node of segment i.
-
-                    // Note: This logic assumes 'indices' correspond to consecutive nodes of the segments.
-                    // The 'forces' array needs to match 'stations'.
-                    // For station i, we can report the force at that node.
-                    // However, elements have forces at BOTH ends (and they differ).
-                    // Station i corresponds to:
-                    // - Start of segment i (if i < length-1)
-                    // - End of segment i-1 (if i > 0)
-                    // We should probably average or take the appropriate side.
-
-                    // Let's implement a helper to calculate forces for a specific segment.
-                    // But wait, the solver calculated 'F' (Global Forces) - these are external.
-                    // We need Internal Forces = K_element * u_element_local.
-
-                    // Simplified approach for immediate visualization:
-                    // If we are at node `idx`, we can try to find a segment connected to it.
-
-                    // Let's just create a placeholder 0 for now to satisfy Types and I will implement the logic in a separate helper function to keep this clean.
                     return { P: 0, V2: 0, V3: 0, T: 0, M2: 0, M3: 0 };
                 })
             };
         });
 
-        // NOW, let's actually implement the force calculation.
-        // We will iterate again and replace the placeholders.
+        // iterate again real implement the force calculation and replace the placeholders.
         Object.keys(frameDetailedResults).forEach(frameIdStr => {
             const origId = Number(frameIdStr);
             const fdr = frameDetailedResults[origId];
             if (!fdr) return;
 
-            // We need the original frame to get properties
             const frame = model.frames.find(f => f.id === origId);
             if (!frame) return;
             const section = model.frameSections.find(s => s.id === frame.sectionId);
@@ -517,17 +454,17 @@ export function analyzeStructure(
 
             if (!section || !material) return;
 
-            // Re-calculate some properties needed for stiffness
-            // We need a helper to get Element Stiffness Matrix (k_local) for a segment
-            // This suggests we should have stored `k` or be able to recompute it.
+            // some properties needed for stiffness
+            // Need a helper to get Element Stiffness Matrix (k_local) for a segment
+            // have to recompute it.
             // Recomputing is safer/easier than storing everything.
 
             // Iterate segments
             // fdr.stations has N points.
             // There are N-1 segments.
-            // We will compute forces at the START of each segment, and END of the last segment.
+            // Compute forces at the START of each segment, and END of the last segment.
 
-            // Important: We need the SOLVER nodes for this frame.
+            // Important: Need the SOLVER nodes for this frame.
             const mapping = frameMapping[origId];
             const solverNodeIndices = mapping.jointIndices;
 
@@ -548,29 +485,14 @@ export function analyzeStructure(
                     u_full[getDofIndex(nodeBIdx, 3)], u_full[getDofIndex(nodeBIdx, 4)], u_full[getDofIndex(nodeBIdx, 5)]
                 ];
 
-                // Calculate Transformations and Local Stiffness again (copied logic from assemble needed)
+                // Calculate Transformations and Local Stiffness again 
                 // Calculate internal forces for this segment
                 const segmentForces = calculateSegmentForces(nodeA, nodeB, uA, uB, section, material, frame.orientation || 0);
 
-                // For the detailed results, we primarily want the forces at the start of the segment (or average?)
-                // Since we are discretizing the element, we can store forces at each station.
                 // The stations correspond to the nodes of these segments.
                 // i goes from 0 to segments (interpolated points).
 
-                // We need to store force at 'i' (Start of current segment) and 'i+1' (End of current segment).
-                // But this loop iterates over segments. 
-                // Let's pre-initialize the forces array for all stations.
-                // Actually, `frameDetailedResults[origId].forces` was initialized with zeros.
-                // We should update it here.
-
-                // Note: The loop is over `indices` which are the NODES.
-                // Wait, the loop `for (let i = 0; i < indices.length - 1; i++)` iterates over SEGMENTS.
-                // Node indices[i] is start, indices[i+1] is end.
-
                 if (frameDetailedResults[origId].forces[i]) {
-                    // Update force at start node of this segment
-                    // We might overwrite if we are not careful, but for a chain of segments, 
-                    // the end of one is the start of the next.
                     // For internal force continuity, they should be the same unless there is a point load at the node.
                     // Let's just store the "start" force of the segment at station i.
                     frameDetailedResults[origId].forces[i] = segmentForces.start;
@@ -589,12 +511,58 @@ export function analyzeStructure(
             return Math.max(max, mag);
         }, 0);
 
+        // 6. Calculate Joint Reactions
+        // R = K_global * U_global - F_external
+        // But here F was built as the external force vector (nodal loads).
+        // The standard equation is Ku = F_ext + R => R = Ku - F_ext.
+        // We have K (global stiffness) and u_full (global displacements) and F (global external forces).
+
+        // Note: F was modified during solution (elimination)? No, we made copies or used separate vectors.
+        // Wait, F was used directly in F_reduced assignment.
+        // F holds the external forces.
+
+        // We need to do the matrix multiplication manually or use helper
+        // K is big (totalDOF x totalDOF). matrixMultiply expects (m x n) * (n x p).
+        // Since matrixMultiply is naive O(n^3), and K is sparse-ish but stored dense... 
+        // For a small solver this is fine. For larger ones, we should just iterate.
+        // Let's implement a simple vector multiplication: v = K * u
+
+        log.push('Calculating reactions...');
+        const reactionForces = zerosVector(totalDOF);
+
+        for (let i = 0; i < totalDOF; i++) {
+            let sum = 0;
+            for (let j = 0; j < totalDOF; j++) {
+                sum += K[i][j] * u_full[j];
+            }
+            reactionForces[i] = sum - F[i];
+            // Result is in Newtons / N.m. Need to convert to kN / kN.m for output.
+        }
+
+        const reactions: any[] = []; // Typed as JointReaction[] in return
+        model.joints.forEach(j => {
+            const idx = solverJoints.findIndex(sj => sj.id === j.id);
+            if (idx !== -1) {
+                reactions.push({
+                    jointId: j.id,
+                    // Convert N -> kN, N.m -> kN.m
+                    fx: reactionForces[getDofIndex(idx, 0)] / 1000,
+                    fy: reactionForces[getDofIndex(idx, 1)] / 1000,
+                    fz: reactionForces[getDofIndex(idx, 2)] / 1000,
+                    mx: reactionForces[getDofIndex(idx, 3)] / 1000,
+                    my: reactionForces[getDofIndex(idx, 4)] / 1000,
+                    mz: reactionForces[getDofIndex(idx, 5)] / 1000,
+                });
+            }
+        });
+
         log.push('Analysis complete.');
 
         return {
             loadCaseId,
             caseName: loadCase.name,
             displacements,
+            reactions,
             frameDetailedResults,
             frameForces: [],
             shellStresses: [],
@@ -609,6 +577,7 @@ export function analyzeStructure(
         return {
             loadCaseId,
             displacements: [],
+            reactions: [],
             frameForces: [],
             shellStresses: [],
             isValid: false,
@@ -639,7 +608,7 @@ export function combineResults(
         }
 
         // Initialize empty result structures
-        // We'll map jointId -> displacement object for easy summation
+        // map jointId -> displacement object for easy summation
         const dispMap: Record<number, JointDisplacement> = {};
         const frameDetailedMap: Record<number, {
             stations: number[];
@@ -687,6 +656,7 @@ export function combineResults(
                         };
                     }
 
+
                     // Add weighted displacements
                     const target = frameDetailedMap[frameId];
                     if (target.displacements.length === detail.displacements.length) {
@@ -716,8 +686,35 @@ export function combineResults(
             }
         }
 
+        // 3. Combine Reactions
+        const reactionMap: Record<number, any> = {};
+
+        for (const comp of combination.cases) {
+            const caseResult = resultsMap[comp.caseId];
+            const scale = comp.scale;
+
+            if (caseResult.reactions) {
+                caseResult.reactions.forEach(r => {
+                    if (!reactionMap[r.jointId]) {
+                        reactionMap[r.jointId] = {
+                            jointId: r.jointId,
+                            fx: 0, fy: 0, fz: 0, mx: 0, my: 0, mz: 0
+                        };
+                    }
+                    const target = reactionMap[r.jointId];
+                    target.fx += r.fx * scale;
+                    target.fy += r.fy * scale;
+                    target.fz += r.fz * scale;
+                    target.mx += r.mx * scale;
+                    target.my += r.my * scale;
+                    target.mz += r.mz * scale;
+                });
+            }
+        }
+
         // Convert maps back to arrays
         const displacements = Object.values(dispMap);
+        const reactions = Object.values(reactionMap);
 
         // Calculate max displacement
         const maxDisplacement = displacements.reduce((max, d) => {
@@ -737,6 +734,7 @@ export function combineResults(
             isValid: true,
             maxDisplacement,
             timestamp,
+            reactions,
             log,
         };
 
@@ -745,6 +743,7 @@ export function combineResults(
         return {
             loadCaseId: combination.id,
             displacements: [],
+            reactions: [],
             frameForces: [],
             shellStresses: [],
             isValid: false,
@@ -846,8 +845,8 @@ function calculateSegmentForces(
         R[2][2] = (cy * cz * s + cx * c) / C1;
     }
 
-    // Transform displacements to local system: u_local = T * u_global
-    // Since T is block diagonal with R, we can do:
+    // Transform displacements to local : u_local = T * u_global
+    // Since T is block diagonal with R
     // u_local_A = R * u_global_A (linear and angular separately)
 
     const transform3 = (vec: number[], rotLocal: number[][]) => {
@@ -872,7 +871,7 @@ function calculateSegmentForces(
     const Iy = section.properties.Iy; // Minor axis? (Check types)
     const Iz = section.properties.Iz; // Major axis
 
-    // We assume Iy corresponds to bending about Local Y (Minor) -> resistance to z-displacement ??
+    // Assume Iy corresponds to bending about Local Y (Minor) -> resistance to z-displacement ??
     // Standard notation: Iy is inertia about y-axis. Iz is inertia about z-axis.
 
     // Stiffness coefficients
@@ -894,15 +893,13 @@ function calculateSegmentForces(
     const k_by_4 = (2 * E * Iy) / L;
 
     // Calculate forces: F_local = k_local * u_local
-    // We compute pertinent components directly.
 
     // Start Node Forces (Reaction/Internal force at A)
     // Sign convention: Positive forces act in +axis direction on the face.
-    // Internal force: tension visible?
 
     // P (Axial X)
     // const P_A = k_axial * (u_local[0] - u_local[6]);
-    // Wait, K matrix usually: [k  -k] * [uA; uB]
+    // K matrix usually: [k  -k] * [uA; uB]
     // F_xA = (EA/L) * uA - (EA/L) * uB = (EA/L)*(uA - uB).
     // If uA=0, uB=1 (tension), F_xA = -EA/L (pulling back).
     // Internal Normal Force N = F_xB (force at right end) = -F_xA.
@@ -915,7 +912,7 @@ function calculateSegmentForces(
     const T = (G * Ix / L) * (rB_trans[0] - rA_trans[0]);
 
     // Shear V and Moment M
-    // We use slope-deflection equations or stiffness directly.
+    // Use slope-deflection equations or stiffness directly.
 
     // Bending about Z (in X-Y plane) -> V2 (Shear Y), M3 (Moment Z)
     // Local DOF indices: uA_y (1), rA_z (5), uB_y (7), rB_z (11)
@@ -932,30 +929,20 @@ function calculateSegmentForces(
 
     // Internal Forces:
     // Shear V2 at start = Fy_A.
-    // Moment M3 at start = -Mz_A (Check sign convention: FEM Mz is CCW. Beam Theory M is sagging positive?)
-    // Standard FEM result output usually reports forces applied by element on node, or vice versa. K*u gives forces ON NODE.
-    // So force on node A is Fy_A. Internal shear V just right of A = Fy_A.
+    // Moment M3 at start = -Mz_A (Check sign convention)
+    // K*u gives forces ON NODE.
+    // Force on node A is Fy_A. Internal shear V just right of A = Fy_A.
     // Moment on node A is Mz_A (CCW). Internal moment M just right of A = -Mz_A (if M is sagging?).
     // Let's perform a check. Simply supported beam, gravity load. Fixed-Fixed.
     // F = K u - F_fixed. Since we solved F_ext = K u, implies K u = F_external.
-    // If we only use K*u, we only get the forces due to displacement (restoring forces).
-    // We MUST subtract Fixed End Forces if we want the total internal stress state, OR just realize K*u is the nodal force balance.
+    // If  only use K*u, onnly get the forces due to displacement (restoring forces).
+    // MUST subtract Fixed End Forces if want the total internal stress state, OR just realize K*u is the nodal force balance.
 
-    // Wait, K*u gives the external force required to maintain the deformation.
+    // K*u gives the external force required to maintain the deformation.
     // Total Internal Force = (Forces due to deformation) + (Forces due to loads within element).
     // F_int = K_local * u_local + F_fixed_local
-    // However, I don't have F_fixed_local handy here without re-integration.
-    // BUT since we discretized the frame into many small segments (solverFrames), and applied loads to NODES of these segments...
-    // The segments themselves are "load free" (loads are lumped at nodes).
-    // EXCEPT if we implemented distributed loads as FEM equivalent nodal loads?
-    // In `analyzeStructure`, we did:
-    // "Distribute half to each node (Lumped Mass approach)"
-    // "Distribute force to nodes (Lumped - 50/50)"
-    // This defines the segments as having NO internal distributed load for the solver's purpose.
-    // They are just springs connecting nodes with point loads.
-    // Therefore, K_local * u_local IS the exact force in the spring element (segment).
-    // And internal force is constant (or linear) between these nodes.
-    // Since we output forces at "stations" which coincide with these nodes, 
+    // distributed loads as FEM equivalent nodal loads?
+
     // Start Force = Force at A. End Force = Force at B.
 
     // V2 (Shear Y)
@@ -973,8 +960,8 @@ function calculateSegmentForces(
     // u_z is index 2. r_y is index 1.
 
     const Fz_A = k_by_1 * uA_trans[2] - k_by_2 * rA_trans[1] - k_by_1 * uB_trans[2] - k_by_2 * rB_trans[1];
-    // Note signs on rotation terms might be flipped depending on coordinate system chirality for y-bending.
-    // Let's assume standard stiffness.
+    // Note signs on rotation terms
+    // assume standard stiffness.
 
     const My_A = -k_by_2 * uA_trans[2] + k_by_3 * rA_trans[1] + k_by_2 * uB_trans[2] + k_by_4 * rB_trans[1];
 

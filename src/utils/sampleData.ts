@@ -30,7 +30,7 @@ export const SAMPLE_MATERIALS: Material[] = [
 export const SAMPLE_FRAME_SECTIONS: FrameSection[] = [
     {
         id: 'sec-beam-1',
-        name: 'IWF 300.150.6,5.9',
+        name: 'IWF 300X150X6.5X9',
         materialId: 'mat-steel-1',
         color: '#3b82f6', // blue
         dimensions: {
@@ -44,7 +44,7 @@ export const SAMPLE_FRAME_SECTIONS: FrameSection[] = [
     },
     {
         id: 'sec-column-1',
-        name: 'SHS 50.50.2,3',
+        name: 'SHS 50X50X2.3',
         materialId: 'mat-steel-1',
         color: '#eab308', // yellow
         dimensions: {

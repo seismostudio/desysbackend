@@ -11,7 +11,7 @@ interface ForceDiagramsProps {
     scale?: number;
 }
 
-export const ForceDiagrams: React.FC<ForceDiagramsProps> = ({ frames, joints, analysisResults, forceType, scale = 1 }) => {
+export const ForceDiagrams: React.FC<ForceDiagramsProps> = ({ frames, joints, analysisResults, forceType }) => {
 
     // Only render if a valid force type is selected
     if (forceType === 'none' || !analysisResults.frameDetailedResults) return null;
@@ -38,7 +38,7 @@ export const ForceDiagrams: React.FC<ForceDiagramsProps> = ({ frames, joints, an
 
     // Target visual height for the maximum force (in meters)
     // This makes the largest diagram appear roughly 'targetHeight' * 'userScale' tall.
-    const baseHeight = 0.5;
+    const baseHeight = 0.75;
     const normalizationFactor = baseHeight / globalMax;
 
     return (
@@ -103,7 +103,7 @@ export const ForceDiagrams: React.FC<ForceDiagramsProps> = ({ frames, joints, an
                 // and then apply the user's `scale` prop (which comes from deformation scale slider).
                 // We might want a separate scale slider for forces later, but for now this is fine.
                 // Reducing the user scale sensitivity a bit because 10x is common for deformation but huge for diagrams if base is 0.5m.
-                const diagScale = normalizationFactor * (scale * 0.2);
+                const diagScale = normalizationFactor;
 
 
                 // Build points

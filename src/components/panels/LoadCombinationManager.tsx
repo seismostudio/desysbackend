@@ -238,7 +238,7 @@ function CombinationRow({
                                         className="input"
                                     >
                                         {cases.map((c) => (
-                                            <option className="text-gray-600" key={c.id} value={c.id}>
+                                            <option key={c.id} value={c.id}>
                                                 {c.name}
                                             </option>
                                         ))}

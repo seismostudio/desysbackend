@@ -23,7 +23,7 @@ import {
   type DistributedFrameLoad,
   type AreaLoad,
 } from './types/structuralTypes';
-import { Book, Play } from 'lucide-react';
+import { Book, ChevronDown, Play } from 'lucide-react';
 import { analyzeStructure, combineResults } from './utils/feaSolver';
 import { DisplacementLegendPanel } from './components/panels/DisplacementLegendPanel';
 import type { AnalysisResultMap } from './types/structuralTypes';
@@ -46,10 +46,20 @@ function App() {
   const [deformationScale, setDeformationScale] = useState(10);
   const [forceType, setForceType] = useState<string>('none');
 
+  // Viewport State
+  const [showViewport, setShowViewport] = useState(false);
+  const [showVisualization, setShowVisualization] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(true);
+
   // Load Visualization
   const [showLoads, setShowLoads] = useState(false);
   const [loadFilterType, setLoadFilterType] = useState<'all' | 'point' | 'distributed' | 'area'>('all');
   const [loadFilterPattern, setLoadFilterPattern] = useState<string>('all');
+
+  // Viewport Settings
+  const [showGlobalAxes, setShowGlobalAxes] = useState(true);
+  const [showJointLabels, setShowJointLabels] = useState(true);
+  const [showFrameLabels, setShowFrameLabels] = useState(true);
 
   // Material handlers
   const addMaterial = (material: Material) => {
@@ -372,6 +382,7 @@ function App() {
     }));
   };
 
+
   // Handle Enter key for shell creation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -506,179 +517,262 @@ function App() {
             areaLoads={model.areaLoads}
             loadPatterns={model.loadPatterns}
             forceType={forceType}
+            showGlobalAxes={showGlobalAxes}
+            showJointLabels={showJointLabels}
+            showFrameLabels={showFrameLabels}
           />
 
           {/* Viewport Controls */}
-          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur p-3 rounded-xl shadow-xl border text-xs">
-            <div className="font-bold mb-2 uppercase tracking-wider">Analysis</div>
+          <div className="absolute top-4 right-4 bg-white/90 w-40 backdrop-blur p-3 rounded-xl shadow-xl border text-xs">
 
-            {/* Load Case & Combination Selection */}
-            <div className="mb-3 max-h-40 overflow-y-auto border rounded p-2 bg-gray-50">
-              <div className="mb-2">
-                <div className="text-[10px] font-bold text-gray-700 mb-1">Load Cases</div>
-                {model.loadCases.map(lc => (
-                  <label key={lc.id} className="flex items-center gap-2 mb-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedLoadCases.has(lc.id)}
-                      onChange={(e) => {
-                        const newSet = new Set(selectedLoadCases);
-                        if (e.target.checked) newSet.add(lc.id);
-                        else newSet.delete(lc.id);
-                        setSelectedLoadCases(newSet);
-                      }}
-                      className="w-3 h-3 rounded accent-blue-600"
-                    />
-                    <span className="text-[10px] text-gray-600">{lc.name}</span>
-                  </label>
-                ))}
-                {model.loadCases.length === 0 && <div className="text-[10px] text-gray-400 italic">No load cases defined</div>}
-              </div>
-
-              <div className="mb-1">
-                <div className="text-[10px] font-bold text-gray-700 mb-1">Combinations</div>
-                {model.loadCombinations.map(lc => (
-                  <label key={lc.id} className="flex items-center gap-2 mb-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCombinations.has(lc.id)}
-                      onChange={(e) => {
-                        const newSet = new Set(selectedCombinations);
-                        if (e.target.checked) newSet.add(lc.id);
-                        else newSet.delete(lc.id);
-                        setSelectedCombinations(newSet);
-                      }}
-                      className="w-3 h-3 rounded accent-blue-600"
-                    />
-                    <span className="text-[10px] text-gray-600">{lc.name}</span>
-                  </label>
-                ))}
-                {model.loadCombinations.length === 0 && <div className="text-[10px] text-gray-400 italic">No combinations defined</div>}
-              </div>
-            </div>
-
-            {/* Run Analysis Button */}
-            <button
-              onClick={runAnalysis}
-              disabled={isAnalyzing}
-              className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium flex items-center justify-center gap-2 transition-colors mb-3"
-            >
-              <Play className="w-3 h-3" />
-              {isAnalyzing ? 'Running...' : 'Run Analysis'}
-            </button>
-
-            <div className="font-bold mb-2 uppercase tracking-wider border-t pt-2">Visualization</div>
-
-            {/* Deformation Visualization */}
-            <div className="mb-3">
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <span className="text-gray-600">Deformation</span>
-                <button
-                  onClick={() => setShowDeformation(!showDeformation)}
-                  disabled={!analysisResults || !activeResultId}
-                  className={`w-12 h-6 rounded-full relative transition-all ${showDeformation ? 'bg-blue-600' : 'bg-gray-300'} disabled:opacity-50`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showDeformation ? 'left-7' : 'left-1'}`} />
-                </button>
-              </div>
-            </div>
-            {showDeformation && (
-              <div>
-                <label className="text-[10px] text-gray-600 block mb-1">Scale: {deformationScale}x</label>
-                <input
-                  type="range"
-                  min="1"
-                  max="100"
-                  value={deformationScale}
-                  onChange={(e) => setDeformationScale(Number(e.target.value))}
-                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-              </div>
-            )}
-
-            {/* Internal Force Visualization */}
-            <div className="mb-3">
-              <label className="block text-[10px] text-gray-600 mb-1">Internal Forces</label>
-              <select
-                value={forceType}
-                onChange={(e) => setForceType(e.target.value)}
-                className="input w-full"
-                disabled={!analysisResults || !activeResultId}
+            {/* Analysis */}
+            <div className="flex items-center justify-between font-bold mb-2 uppercase tracking-wider">
+              Analysis
+              <button
+                onClick={() => setShowAnalysis(!showAnalysis)}
+                className={`flex items-center justify-end w-fit h-6 cursor-pointer rounded-full relative`}
               >
-                <option value="none">None</option>
-                <option value="P">Axial Force (P)</option>
-                <option value="V2">Shear Major (V2)</option>
-                <option value="V3">Shear Minor (V3)</option>
-                <option value="T">Torsion (T)</option>
-                <option value="M2">Moment Major (M2)</option>
-                <option value="M3">Moment Minor (M3)</option>
-              </select>
+                <ChevronDown className={`w-4 h-4 transition ${showAnalysis ? 'rotate-180' : ''}`} />
+              </button>
             </div>
 
-            <div className="mt-4">
-              <div className="font-bold mb-2 uppercase tracking-wider border-t pt-2">Viewport</div>
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <span className="text-gray-600">Extrude Mode</span>
-                <button
-                  onClick={() => setUIState((prev) => ({ ...prev, extrudeMode: !prev.extrudeMode }))}
-                  className={`w-12 h-6 rounded-full relative transition-all ${uiState.extrudeMode ? 'bg-blue-600' : 'bg-gray-300'
-                    }`}
-                >
-                  <div
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${uiState.extrudeMode ? 'left-7' : 'left-1'
-                      }`}
-                  />
-                </button>
-              </div>
-              <div className="text-[10px] text-gray-500 space-y-1">
-                <div>• Joints: {model.joints.length}</div>
-                <div>• Frames: {model.frames.length}</div>
-                <div>• Shells: {model.shells.length}</div>
-              </div>
-            </div>
-
-            <div className="mb-3">
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <span className="text-gray-600">Show Loads</span>
-                <button
-                  onClick={() => setShowLoads(!showLoads)}
-                  // disabled={!analysisResults || !activeResultId}
-                  className={`w-12 h-6 rounded-full relative transition-all ${showLoads ? 'bg-blue-600' : 'bg-gray-300'} disabled:opacity-50`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showDeformation ? 'left-7' : 'left-1'}`} />
-                </button>
-              </div>
-            </div>
-            {showLoads && (
-              <div className="space-y-2">
-                <div>
-                  <label className="text-[10px] text-gray-600 block mb-1">Type</label>
-                  <select
-                    value={loadFilterType}
-                    onChange={(e) => setLoadFilterType(e.target.value as any)}
-                    className="w-full px-2 py-1 border rounded text-[10px] bg-white"
-                  >
-                    <option value="all">All</option>
-                    <option value="point">Point</option>
-                    <option value="distributed">Distributed</option>
-                    <option value="area">Area</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] text-gray-600 block mb-1">Pattern</label>
-                  <select
-                    value={loadFilterPattern}
-                    onChange={(e) => setLoadFilterPattern(e.target.value)}
-                    className="w-full px-2 py-1 border rounded text-[10px] bg-white"
-                  >
-                    <option value="all">All</option>
-                    {model.loadPatterns.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
+            {showAnalysis && (
+              <>
+                {/* Load Case & Combination Selection */}
+                <div className="mb-3 max-h-40 overflow-y-auto border rounded p-2 bg-gray-50">
+                  <div className="mb-2">
+                    <div className="text-[10px] font-bold text-gray-700 mb-1">Load Cases</div>
+                    {model.loadCases.map(lc => (
+                      <label key={lc.id} className="flex items-center gap-2 mb-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedLoadCases.has(lc.id)}
+                          onChange={(e) => {
+                            const newSet = new Set(selectedLoadCases);
+                            if (e.target.checked) newSet.add(lc.id);
+                            else newSet.delete(lc.id);
+                            setSelectedLoadCases(newSet);
+                          }}
+                          className="w-3 h-3 rounded accent-blue-600"
+                        />
+                        <span className="text-[10px] text-gray-600">{lc.name}</span>
+                      </label>
                     ))}
+                    {model.loadCases.length === 0 && <div className="text-[10px] text-gray-400 italic">No load cases defined</div>}
+                  </div>
+
+                  <div className="mb-1">
+                    <div className="text-[10px] font-bold text-gray-700 mb-1">Combinations</div>
+                    {model.loadCombinations.map(lc => (
+                      <label key={lc.id} className="flex items-center gap-2 mb-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedCombinations.has(lc.id)}
+                          onChange={(e) => {
+                            const newSet = new Set(selectedCombinations);
+                            if (e.target.checked) newSet.add(lc.id);
+                            else newSet.delete(lc.id);
+                            setSelectedCombinations(newSet);
+                          }}
+                          className="w-3 h-3 rounded accent-blue-600"
+                        />
+                        <span className="text-[10px] text-gray-600">{lc.name}</span>
+                      </label>
+                    ))}
+                    {model.loadCombinations.length === 0 && <div className="text-[10px] text-gray-400 italic">No combinations defined</div>}
+                  </div>
+                </div>
+
+                {/* Run Analysis Button */}
+                <button
+                  onClick={runAnalysis}
+                  disabled={isAnalyzing}
+                  className="cursor-pointer w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium flex items-center justify-center gap-2 transition-colors mb-3"
+                >
+                  <Play className="w-3 h-3" />
+                  {isAnalyzing ? 'Running...' : 'Run Analysis'}
+                </button>
+              </>
+            )}
+
+            {/* Visualization */}
+            <div className="flex items-center justify-between font-bold mb-2 uppercase tracking-wider border-t pt-2">
+              Visualization
+              <button
+                onClick={() => setShowVisualization(!showVisualization)}
+                className={`flex items-center justify-end w-fit h-6 cursor-pointer rounded-full relative`}
+              >
+                <ChevronDown className={`w-4 h-4 transition ${showVisualization ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {showVisualization && (
+              <>
+                {/* Deformation Visualization */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <span className="text-gray-600">Deformation</span>
+                    <button
+                      onClick={() => setShowDeformation(!showDeformation)}
+                      disabled={!analysisResults || !activeResultId}
+                      className={`w-12 h-6 rounded-full relative transition-all ${showDeformation ? 'bg-blue-600' : 'bg-gray-300'} disabled:opacity-50`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showDeformation ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
+                </div>
+                {showDeformation && (
+                  <div>
+                    <label className="text-[10px] text-gray-600 block mb-1">Scale: {deformationScale}x</label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="100"
+                      value={deformationScale}
+                      onChange={(e) => setDeformationScale(Number(e.target.value))}
+                      className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    />
+                  </div>
+                )}
+
+                {/* Internal Force Visualization */}
+                <div className="mb-3">
+                  <label className="block text-[10px] text-gray-600 mb-1">Internal Forces</label>
+                  <select
+                    value={forceType}
+                    onChange={(e) => setForceType(e.target.value)}
+                    className="input w-full"
+                    disabled={!analysisResults || !activeResultId}
+                  >
+                    <option value="none">None</option>
+                    <option value="P">Axial Force (P)</option>
+                    <option value="V2">Shear Major (V2)</option>
+                    <option value="V3">Shear Minor (V3)</option>
+                    <option value="T">Torsion (T)</option>
+                    <option value="M2">Moment Major (M2)</option>
+                    <option value="M3">Moment Minor (M3)</option>
                   </select>
                 </div>
-              </div>
+              </>
             )}
+
+            {/* Viewport */}
+            <div className="flex items-center justify-between font-bold mb-2 uppercase tracking-wider border-t pt-2">
+              Viewport
+              <button
+                onClick={() => setShowViewport(!showViewport)}
+                className={`flex items-center justify-end w-fit h-6 cursor-pointer rounded-full relative`}
+              >
+                <ChevronDown className={`w-4 h-4 transition ${showViewport ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {showViewport && (
+              <>
+                <div className="mt-4">
+                  {/* Extrude Mode */}
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <span className="text-gray-600">Extrude</span>
+                    <button
+                      onClick={() => setUIState((prev) => ({ ...prev, extrudeMode: !prev.extrudeMode }))}
+                      className={`w-12 h-6 rounded-full relative transition-all ${uiState.extrudeMode ? 'bg-blue-600' : 'bg-gray-300'
+                        }`}
+                    >
+                      <div
+                        className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${uiState.extrudeMode ? 'left-7' : 'left-1'
+                          }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Show Global Axes */}
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <span className="text-gray-600">Global Axes</span>
+                    <button
+                      onClick={() => setShowGlobalAxes(!showGlobalAxes)}
+                      className={`w-12 h-6 rounded-full relative transition-all ${showGlobalAxes ? 'bg-blue-600' : 'bg-gray-300'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showGlobalAxes ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
+
+                  {/* Show Joint Labels */}
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <span className="text-gray-600">Joint Labels</span>
+                    <button
+                      onClick={() => setShowJointLabels(!showJointLabels)}
+                      className={`w-12 h-6 rounded-full relative transition-all ${showJointLabels ? 'bg-blue-600' : 'bg-gray-300'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showJointLabels ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
+
+                  {/* Show Frame Labels */}
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <span className="text-gray-600">Frame Labels</span>
+                    <button
+                      onClick={() => setShowFrameLabels(!showFrameLabels)}
+                      className={`w-12 h-6 rounded-full relative transition-all ${showFrameLabels ? 'bg-blue-600' : 'bg-gray-300'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showFrameLabels ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
+
+                  {/* Show Loads */}
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <span className="text-gray-600">Show Loads</span>
+                      <button
+                        onClick={() => setShowLoads(!showLoads)}
+                        // disabled={!analysisResults || !activeResultId}
+                        className={`w-12 h-6 rounded-full relative transition-all ${showLoads ? 'bg-blue-600' : 'bg-gray-300'} disabled:opacity-50`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showLoads ? 'left-7' : 'left-1'}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {showLoads && (
+                    <div className="space-y-2">
+                      <div>
+                        <label className="text-[10px] text-gray-600 block mb-1">Type</label>
+                        <select
+                          value={loadFilterType}
+                          onChange={(e) => setLoadFilterType(e.target.value as any)}
+                          className="input"
+                        >
+                          <option value="all">All</option>
+                          <option value="point">Point</option>
+                          <option value="distributed">Distributed</option>
+                          <option value="area">Area</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-600 block mb-1">Pattern</label>
+                        <select
+                          value={loadFilterPattern}
+                          onChange={(e) => setLoadFilterPattern(e.target.value)}
+                          className="input"
+                        >
+                          <option value="all">All</option>
+                          {model.loadPatterns.map((p) => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-[10px] text-gray-500 space-y-1 mt-2">
+                  <div>• Joints: {model.joints.length}</div>
+                  <div>• Frames: {model.frames.length}</div>
+                  <div>• Shells: {model.shells.length}</div>
+                </div>
+              </>
+            )}
+
+
           </div>
 
 
@@ -699,6 +793,10 @@ function App() {
             onUpdate={updateJoint}
             onDelete={deleteJoint}
             onClose={() => setUIState(prev => ({ ...prev, showJointModal: false }))}
+            loadPatterns={model.loadPatterns}
+            pointLoads={model.pointLoads}
+            onAddLoad={addPointLoad}
+            onDeleteLoad={deletePointLoad}
           />
         )
       }
@@ -712,6 +810,10 @@ function App() {
             onUpdate={updateFrame}
             onDelete={deleteFrame}
             onClose={() => setUIState(prev => ({ ...prev, showFrameModal: false }))}
+            loadPatterns={model.loadPatterns}
+            distributedLoads={model.distributedFrameLoads}
+            onAddLoad={addDistributedLoad}
+            onDeleteLoad={deleteDistributedLoad}
           />
         )
       }
@@ -725,6 +827,10 @@ function App() {
             onUpdate={updateShell}
             onDelete={deleteShell}
             onClose={() => setUIState(prev => ({ ...prev, showShellModal: false }))}
+            loadPatterns={model.loadPatterns}
+            areaLoads={model.areaLoads}
+            onAddLoad={addAreaLoad}
+            onDeleteLoad={deleteAreaLoad}
           />
         )
       }

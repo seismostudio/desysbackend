@@ -233,7 +233,7 @@ function LoadCaseRow({
                                         className="input"
                                     >
                                         {patterns.map((p) => (
-                                            <option className="text-gray-600" key={p.id} value={p.id}>
+                                            <option key={p.id} value={p.id}>
                                                 {p.name}
                                             </option>
                                         ))}

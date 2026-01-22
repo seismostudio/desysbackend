@@ -1,6 +1,8 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import type { AnalysisResults, AnalysisResultMap, Joint, Frame, FrameSection } from '../../types/structuralTypes';
-import { ArrowUpDown, ArrowUp, ArrowDown, Filter, ChevronDown, Check } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Filter, ChevronDown, Check, Download } from 'lucide-react';
+import { ExportResultsModal } from '../modals/ExportResultsModal';
+import { downloadCSV, generateDisplacementsCSV, generateFrameForcesCSV, generateReactionsCSV } from '../../utils/csvExport';
 
 interface ResultsPanelProps {
     results: AnalysisResults | null;
@@ -111,7 +113,7 @@ function MultiSelectFilter({
     );
 }
 
-export function ResultsPanel({ results, analysisResultMap, activeResultId, onSelectResult, frames, frameSections, isAnalyzing }: ResultsPanelProps) {
+export function ResultsPanel({ results, analysisResultMap, activeResultId, onSelectResult, frames, frameSections, isAnalyzing, joints }: ResultsPanelProps) {
     const [sortConfig, setSortConfig] = useState<SortConfig>(null);
     const [filters, setFilters] = useState<{
         frameId: string[];
@@ -123,9 +125,41 @@ export function ResultsPanel({ results, analysisResultMap, activeResultId, onSel
         nodeId: []
     });
 
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [exportType, setExportType] = useState<'displacements' | 'forces' | 'reactions'>('displacements');
+
+    const handleOpenExport = (type: 'displacements' | 'forces' | 'reactions') => {
+        setExportType(type);
+        setIsExportModalOpen(true);
+    };
+
+    const handleExport = (selectedIds: string[]) => {
+        if (!analysisResultMap) return;
+
+        let csv = '';
+        let filename = '';
+
+        if (exportType === 'displacements') {
+            csv = generateDisplacementsCSV(analysisResultMap, selectedIds);
+            filename = `Joint_Displacements_${Date.now()}.csv`;
+        } else if (exportType === 'forces') {
+            csv = generateFrameForcesCSV(analysisResultMap, selectedIds, frames, frameSections);
+            filename = `Element_Forces_${Date.now()}.csv`;
+        } else if (exportType === 'reactions') {
+            csv = generateReactionsCSV(analysisResultMap, selectedIds, joints);
+            filename = `Joint_Reactions_${Date.now()}.csv`;
+        }
+
+        downloadCSV(filename, csv);
+        setIsExportModalOpen(false);
+    };
+
     // Memoize frame and section lookups
     const frameMap = useMemo(() => new Map(frames.map(f => [f.id, f])), [frames]);
     const sectionMap = useMemo(() => new Map(frameSections.map(s => [s.id, s])), [frameSections]);
+    const [showTableDisp, setShowTableDisp] = useState(true);
+    const [showTableForces, setShowTableForces] = useState(false);
+    const [showTableJR, setShowTableJR] = useState(false);
 
     // 1. Flatten Data (Raw)
     const rawFlatData = useMemo(() => {
@@ -293,8 +327,8 @@ export function ResultsPanel({ results, analysisResultMap, activeResultId, onSel
                                 <option key={res.loadCaseId} value={res.loadCaseId}>
                                     {res.loadCaseId.startsWith('case-') ? 'Case: ' : 'Combo: '}
                                     {res.log[1].includes('Combining')
-                                        ? res.loadCaseId // If it's a combination (simplified detection, usually better to store name in results)
-                                        : res.loadCaseId}
+                                        ? res.caseName // If it's a combination (simplified detection, usually better to store name in results)
+                                        : res.caseName}
                                     {/* Ideally we should pass names into results or use lookup */}
                                 </option>
                             ))}
@@ -302,7 +336,7 @@ export function ResultsPanel({ results, analysisResultMap, activeResultId, onSel
                     </div>
                 )}
 
-                <p className="text-[10px] text-gray-400">Current View: {results.caseName || results.loadCaseId}</p>
+                {/* <p className="text-[10px] text-gray-400">Current View: {results.caseName || results.loadCaseId}</p> */}
             </div>
 
             <div className="flex-1 overflow-auto no-scrollbar p-3 space-y-4">
@@ -321,120 +355,244 @@ export function ResultsPanel({ results, analysisResultMap, activeResultId, onSel
                     </div>
                 </div>
 
-                {/* Joint Displacements Table */}
-                <div>
-                    <h4 className="text-xs font-semibold text-white uppercase tracking-wider mb-2">
+                <div className="flex gap-2">
+                    <button className={`cursor-pointer text-white text-xs px-2 py-1 rounded ${showTableDisp ? 'bg-gray-700' : 'bg-gray-800'}`}
+                        onClick={() => { setShowTableDisp(true); setShowTableForces(false); setShowTableJR(false); }}
+                    >
                         Joint Displacements
-                    </h4>
-                    <div className="border rounded-lg overflow-y-auto no-scrollbar h-60">
-                        <table className="w-full text-[10px]">
-                            <thead className="bg-gray-800">
-                                <tr>
-                                    <th className="px-2 py-1 text-left font-semibold text-white">Joint</th>
-                                    <th className="px-2 py-1 text-right font-semibold text-white">Ux (mm)</th>
-                                    <th className="px-2 py-1 text-right font-semibold text-white">Uy (mm)</th>
-                                    <th className="px-2 py-1 text-right font-semibold text-white">Uz (mm)</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y bg-gray-700">
-                                {results.displacements.map((disp, i) => ( // Added index as fallback key
-                                    <tr key={disp.jointId || i} className="hover:bg-gray-50">
-                                        <td className="px-2 py-1 font-medium text-white">{disp.jointId}</td>
-                                        <td className="px-2 py-1 text-right font-mono text-white">
-                                            {(disp.ux * 1000).toFixed(3)}
-                                        </td>
-                                        <td className="px-2 py-1 text-right font-mono text-white">
-                                            {(disp.uy * 1000).toFixed(3)}
-                                        </td>
-                                        <td className="px-2 py-1 text-right font-mono text-white">
-                                            {(disp.uz * 1000).toFixed(3)}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    </button>
+                    <button className={`cursor-pointer text-white text-xs px-2 py-1 rounded ${showTableForces ? 'bg-gray-700' : 'bg-gray-800'}`}
+                        onClick={() => { setShowTableDisp(false); setShowTableForces(true); setShowTableJR(false); }}
+                    >
+                        Element Forces
+                    </button>
+                    <button className={`cursor-pointer text-white text-xs px-2 py-1 rounded ${showTableJR ? 'bg-gray-700' : 'bg-gray-800'}`}
+                        onClick={() => { setShowTableDisp(false); setShowTableForces(false); setShowTableJR(true); }}
+                    >
+                        Joint Reactions
+                    </button>
                 </div>
 
-                {/* Internal Forces Table */}
-                <div className="w-full">
-                    <h4 className="text-xs font-semibold text-white uppercase tracking-wider mb-2 flex items-center justify-between">
-                        Internal Forces
-                        <span className="text-[10px] font-normal text-gray-400">{processedResults.length} records</span>
-                    </h4>
-
-                    {/* Filters */}
-                    <div className="grid grid-cols-3 gap-2 mb-2">
-                        {/* Frame Filter */}
-                        <MultiSelectFilter
-                            label="Frame"
-                            options={filterOptions.frames}
-                            selectedValues={filters.frameId}
-                            onChange={(vals) => handleFilterChange('frameId', vals)}
-                        />
-                        {/* Section Filter */}
-                        <MultiSelectFilter
-                            label="Section"
-                            options={filterOptions.sections}
-                            selectedValues={filters.sectionName}
-                            onChange={(vals) => handleFilterChange('sectionName', vals)}
-                        />
-                        {/* Node Filter */}
-                        <MultiSelectFilter
-                            label="Station"
-                            options={filterOptions.nodes}
-                            selectedValues={filters.nodeId}
-                            onChange={(vals) => handleFilterChange('nodeId', vals)}
-                        />
-                    </div>
-
-                    <div className="border rounded-lg overflow-x-auto custom-scrollbar h-80">
-                        <table className="w-full text-[10px]">
-                            <thead className="bg-gray-800 sticky top-0 z-10">
-                                <tr>
-                                    <SortableHeader label="Frame" columnKey="frameId" align="left" />
-                                    <SortableHeader label="Section" columnKey="sectionName" align="left" />
-                                    <SortableHeader label="Sta." columnKey="nodeId" />
-                                    <SortableHeader label="P (kN)" columnKey="P" />
-                                    <SortableHeader label="V2 (kN)" columnKey="V2" />
-                                    <SortableHeader label="V3 (kN)" columnKey="V3" />
-                                    <SortableHeader label="M2 (kNm)" columnKey="M2" />
-                                    <SortableHeader label="M3 (kNm)" columnKey="M3" />
-                                    <SortableHeader label="T (kNm)" columnKey="T" />
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y bg-gray-700">
-                                {processedResults.length > 0 ? (
-                                    processedResults.map((row) => (
-                                        <tr key={row.id} className="hover:bg-gray-50">
-                                            <td className="px-2 py-1 font-medium text-white">{row.frameId}</td>
-                                            <td className="px-2 py-1 text-gray-300">{row.sectionName}</td>
-                                            <td className="px-2 py-1 text-center text-gray-300">{row.nodeId}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-white">{row.P.toFixed(2)}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-white">{row.V2.toFixed(2)}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-white">{row.V3.toFixed(2)}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-white">{row.M2.toFixed(2)}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-white">{row.M3.toFixed(2)}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-white">{row.T.toFixed(2)}</td>
-                                        </tr>
-                                    ))
-                                ) : (
+                {showTableDisp && (
+                    /* Joint Displacements Table */
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-xs font-semibold text-white uppercase tracking-wider">
+                                Joint Displacements
+                            </h4>
+                            <button
+                                onClick={() => handleOpenExport('displacements')}
+                                className="cursor-pointer flex items-center gap-1.5 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-medium rounded transition-colors"
+                            >
+                                <Download className="w-3 h-3" />
+                                Export
+                            </button>
+                        </div>
+                        <div className="border rounded-lg overflow-y-auto no-scrollbar h-60">
+                            <table className="w-full text-[10px]">
+                                <thead className="bg-gray-800">
                                     <tr>
-                                        <td colSpan={9} className="px-2 py-4 text-center text-gray-400 italic">
-                                            No results found matching filters
-                                        </td>
+                                        <th className="px-2 py-1 text-left font-semibold text-white">Joint</th>
+                                        <th className="px-2 py-1 text-right font-semibold text-white">Ux (mm)</th>
+                                        <th className="px-2 py-1 text-right font-semibold text-white">Uy (mm)</th>
+                                        <th className="px-2 py-1 text-right font-semibold text-white">Uz (mm)</th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y bg-gray-700">
+                                    {results.displacements.map((disp, i) => ( // Added index as fallback key
+                                        <tr key={disp.jointId || i} className="hover:bg-gray-50">
+                                            <td className="px-2 py-1 font-medium text-white">{disp.jointId}</td>
+                                            <td className="px-2 py-1 text-right font-mono text-white">
+                                                {(disp.ux * 1000).toFixed(3)}
+                                            </td>
+                                            <td className="px-2 py-1 text-right font-mono text-white">
+                                                {(disp.uy * 1000).toFixed(3)}
+                                            </td>
+                                            <td className="px-2 py-1 text-right font-mono text-white">
+                                                {(disp.uz * 1000).toFixed(3)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                )}
+
+                {showTableForces && (
+                    /* Internal Forces Table */
+                    <div className="w-full">
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                                Internal Forces
+                                <span className="text-[10px] font-normal text-gray-400">{processedResults.length} records</span>
+                            </h4>
+                            <button
+                                onClick={() => handleOpenExport('forces')}
+                                className="cursor-pointer flex items-center gap-1.5 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-medium rounded transition-colors"
+                            >
+                                <Download className="w-3 h-3" />
+                                Export
+                            </button>
+                        </div>
+
+                        {/* Filters */}
+                        <div className="grid grid-cols-3 gap-2 mb-2">
+                            {/* Frame Filter */}
+                            <MultiSelectFilter
+                                label="Frame"
+                                options={filterOptions.frames}
+                                selectedValues={filters.frameId}
+                                onChange={(vals) => handleFilterChange('frameId', vals)}
+                            />
+                            {/* Section Filter */}
+                            <MultiSelectFilter
+                                label="Section"
+                                options={filterOptions.sections}
+                                selectedValues={filters.sectionName}
+                                onChange={(vals) => handleFilterChange('sectionName', vals)}
+                            />
+                            {/* Node Filter */}
+                            <MultiSelectFilter
+                                label="Station"
+                                options={filterOptions.nodes}
+                                selectedValues={filters.nodeId}
+                                onChange={(vals) => handleFilterChange('nodeId', vals)}
+                            />
+                        </div>
+
+                        <div className="border rounded-lg overflow-x-auto custom-scrollbar h-140">
+                            <table className="w-full text-[10px]">
+                                <thead className="bg-gray-800 sticky top-0 z-10">
+                                    <tr>
+                                        <SortableHeader label="Frame" columnKey="frameId" align="left" />
+                                        <SortableHeader label="Section" columnKey="sectionName" align="left" />
+                                        <SortableHeader label="Sta." columnKey="nodeId" />
+                                        <SortableHeader label="P (kN)" columnKey="P" />
+                                        <SortableHeader label="V2 (kN)" columnKey="V2" />
+                                        <SortableHeader label="V3 (kN)" columnKey="V3" />
+                                        <SortableHeader label="M2 (kNm)" columnKey="M2" />
+                                        <SortableHeader label="M3 (kNm)" columnKey="M3" />
+                                        <SortableHeader label="T (kNm)" columnKey="T" />
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y bg-gray-700">
+                                    {processedResults.length > 0 ? (
+                                        processedResults.map((row) => (
+                                            <tr key={row.id} className="hover:bg-gray-50">
+                                                <td className="px-2 py-1 font-medium text-white">{row.frameId}</td>
+                                                <td className="px-2 py-1 text-gray-300">{row.sectionName}</td>
+                                                <td className="px-2 py-1 text-center text-gray-300">{row.nodeId}</td>
+                                                <td className="px-2 py-1 text-right font-mono text-white">{row.P.toFixed(2)}</td>
+                                                <td className="px-2 py-1 text-right font-mono text-white">{row.V2.toFixed(2)}</td>
+                                                <td className="px-2 py-1 text-right font-mono text-white">{row.V3.toFixed(2)}</td>
+                                                <td className="px-2 py-1 text-right font-mono text-white">{row.M2.toFixed(2)}</td>
+                                                <td className="px-2 py-1 text-right font-mono text-white">{row.M3.toFixed(2)}</td>
+                                                <td className="px-2 py-1 text-right font-mono text-white">{row.T.toFixed(2)}</td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={9} className="px-2 py-4 text-center text-gray-400 italic">
+                                                No results found matching filters
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+
+                {showTableJR && (
+                    /* Joint Reactions Table */
+                    <div className="w-full">
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                                Joint Reactions
+                                <span className="text-[10px] font-normal text-gray-400">
+                                    {results.reactions ? results.reactions.filter(r => {
+                                        const joint = joints.find(j => j.id === r.jointId);
+                                        if (!joint || !joint.restraint) return false;
+                                        const { ux, uy, uz, rx, ry, rz } = joint.restraint;
+                                        return ux || uy || uz || rx || ry || rz;
+                                    }).length : 0} records
+                                </span>
+                            </h4>
+                            <button
+                                onClick={() => handleOpenExport('reactions')}
+                                className="cursor-pointer flex items-center gap-1.5 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-medium rounded transition-colors"
+                            >
+                                <Download className="w-3 h-3" />
+                                Export
+                            </button>
+                        </div>
+
+                        <div className="border rounded-lg overflow-x-auto custom-scrollbar h-96">
+                            <table className="w-full text-[10px]">
+                                <thead className="bg-gray-800 sticky top-0 z-10">
+                                    <tr>
+                                        <th className="px-2 py-1 text-left font-semibold text-white">Joint</th>
+                                        <th className="px-2 py-1 text-right font-semibold text-white">Fx (kN)</th>
+                                        <th className="px-2 py-1 text-right font-semibold text-white">Fy (kN)</th>
+                                        <th className="px-2 py-1 text-right font-semibold text-white">Fz (kN)</th>
+                                        <th className="px-2 py-1 text-right font-semibold text-white">Mx (kNm)</th>
+                                        <th className="px-2 py-1 text-right font-semibold text-white">My (kNm)</th>
+                                        <th className="px-2 py-1 text-right font-semibold text-white">Mz (kNm)</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y bg-gray-700">
+                                    {results.reactions && results.reactions.length > 0 ? (
+                                        results.reactions
+                                            .filter(r => {
+                                                // Only show joints that have at least one restraint
+                                                const joint = joints.find(j => j.id === r.jointId);
+                                                if (!joint || !joint.restraint) return false;
+                                                const { ux, uy, uz, rx, ry, rz } = joint.restraint;
+                                                return ux || uy || uz || rx || ry || rz;
+                                            })
+                                            .sort((a, b) => a.jointId - b.jointId)
+                                            .map((row) => (
+                                                <tr key={row.jointId} className="hover:bg-gray-50">
+                                                    <td className="px-2 py-1 font-medium text-white">{row.jointId}</td>
+                                                    <td className="px-2 py-1 text-right font-mono text-white">{row.fx.toFixed(2)}</td>
+                                                    <td className="px-2 py-1 text-right font-mono text-white">{row.fy.toFixed(2)}</td>
+                                                    <td className="px-2 py-1 text-right font-mono text-white">{row.fz.toFixed(2)}</td>
+                                                    <td className="px-2 py-1 text-right font-mono text-white">{row.mx.toFixed(2)}</td>
+                                                    <td className="px-2 py-1 text-right font-mono text-white">{row.my.toFixed(2)}</td>
+                                                    <td className="px-2 py-1 text-right font-mono text-white">{row.mz.toFixed(2)}</td>
+                                                </tr>
+                                            ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={7} className="px-2 py-4 text-center text-gray-400 italic">
+                                                No reactions found
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
             </div>
 
             <div className="px-3 py-2 border-t text-[10px] text-gray-500 flex justify-between">
                 <span>DE-Sys | by Dahar Engineer</span>
                 <span>v0.2.0</span>
             </div>
+
+            {analysisResultMap && (
+                <ExportResultsModal
+                    isOpen={isExportModalOpen}
+                    onClose={() => setIsExportModalOpen(false)}
+                    onExport={handleExport}
+                    analysisResultMap={analysisResultMap}
+                    type={exportType}
+                />
+            )}
         </div>
     );
 }

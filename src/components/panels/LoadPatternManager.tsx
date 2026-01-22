@@ -200,11 +200,11 @@ function PatternRow({
                                 onChange={(e) => onChange?.({ ...pattern, type: e.target.value as LoadPatternType })}
                                 className="input"
                             >
-                                <option className="text-gray-600" value="Dead">Dead Load</option>
-                                <option className="text-gray-600" value="Live">Live Load</option>
-                                <option className="text-gray-600" value="Rain">Rain Load</option>
-                                <option className="text-gray-600" value="Wind">Wind Load</option>
-                                <option className="text-gray-600" value="Earthquake">Earthquake</option>
+                                <option value="Dead">Dead Load</option>
+                                <option value="Live">Live Load</option>
+                                <option value="Rain">Rain Load</option>
+                                <option value="Wind">Wind Load</option>
+                                <option value="Earthquake">Earthquake</option>
                             </select>
                         </div>
                         <div className="col-span-12 pb-1">
