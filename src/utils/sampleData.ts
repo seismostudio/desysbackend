@@ -185,33 +185,33 @@ export const SAMPLE_DISTRIBUTED_FRAME_LOADS: DistributedFrameLoad[] = [
     { id: 'dl-1', frameId: 12, patternId: 'pat-live', direction: 'Gravity', loadType: 'Uniform', startMagnitude: 10, endMagnitude: 10, startDistance: 0, endDistance: 10 },
 ];
 
-export const INITIAL_TEMPLATE_MODEL: StructuralModel = {
-    materials: SAMPLE_MATERIALS,
-    frameSections: SAMPLE_FRAME_SECTIONS,
-    shellSections: SAMPLE_SHELL_SECTIONS,
-    loadPatterns: SAMPLE_LOAD_PATTERNS,
-    loadCases: SAMPLE_LOAD_CASES,
-    loadCombinations: SAMPLE_LOAD_COMBINATIONS,
-    joints: SAMPLE_JOINTS,
-    frames: SAMPLE_FRAMES,
-    shells: SAMPLE_SHELLS,
-    pointLoads: SAMPLE_POINT_LOADS,
-    distributedFrameLoads: SAMPLE_DISTRIBUTED_FRAME_LOADS,
-    areaLoads: [],
-};
-
 // export const INITIAL_TEMPLATE_MODEL: StructuralModel = {
-//     materials: [],
-//     frameSections: [],
-//     shellSections: [],
-//     loadPatterns: [],
-//     loadCases: [],
-//     loadCombinations: [],
-//     joints: [],
-//     frames: [],
-//     shells: [],
-//     pointLoads: [],
-//     distributedFrameLoads: [],
+//     materials: SAMPLE_MATERIALS,
+//     frameSections: SAMPLE_FRAME_SECTIONS,
+//     shellSections: SAMPLE_SHELL_SECTIONS,
+//     loadPatterns: SAMPLE_LOAD_PATTERNS,
+//     loadCases: SAMPLE_LOAD_CASES,
+//     loadCombinations: SAMPLE_LOAD_COMBINATIONS,
+//     joints: SAMPLE_JOINTS,
+//     frames: SAMPLE_FRAMES,
+//     shells: SAMPLE_SHELLS,
+//     pointLoads: SAMPLE_POINT_LOADS,
+//     distributedFrameLoads: SAMPLE_DISTRIBUTED_FRAME_LOADS,
 //     areaLoads: [],
 // };
+
+export const INITIAL_TEMPLATE_MODEL: StructuralModel = {
+    materials: [],
+    frameSections: [],
+    shellSections: [],
+    loadPatterns: [],
+    loadCases: [],
+    loadCombinations: [],
+    joints: [],
+    frames: [],
+    shells: [],
+    pointLoads: [],
+    distributedFrameLoads: [],
+    areaLoads: [],
+};
 
