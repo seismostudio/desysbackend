@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Vector3 } from 'three';
-import { Line } from '@react-three/drei'; // Use Drei Line
+import * as THREE from 'three';
 import type { Frame, AnalysisResults, Joint } from '../../types/structuralTypes';
 
 interface ForceDiagramsProps {
@@ -41,118 +41,107 @@ export const ForceDiagrams: React.FC<ForceDiagramsProps> = ({ frames, joints, an
     const baseHeight = 0.75;
     const normalizationFactor = baseHeight / globalMax;
 
+    // Unified geometry for all diagram curves
+    const { diagramGeometry, fillGeometry } = useMemo(() => {
+        const diagramPoints: number[] = [];
+        const fillPoints: number[] = [];
+
+        frames.forEach(frame => {
+            const results = analysisResults.frameDetailedResults![frame.id];
+            if (!results || !results.forces) return;
+
+            const startJoint = jointMap.get(frame.jointI);
+            const endJoint = jointMap.get(frame.jointJ);
+            if (!startJoint || !endJoint) return;
+
+            const start = new Vector3(startJoint.x, startJoint.y, startJoint.z);
+            const end = new Vector3(endJoint.x, endJoint.y, endJoint.z);
+            const dir = new Vector3().subVectors(end, start).normalize();
+
+            let localX = dir.clone();
+            let localY = new Vector3(0, 1, 0);
+            let localZ = new Vector3(0, 0, 1);
+
+            if (Math.abs(localX.x) < 0.001 && Math.abs(localX.z) < 0.001) {
+                if (localX.y > 0) {
+                    localY = new Vector3(-1, 0, 0);
+                    localZ = new Vector3(0, 0, 1);
+                } else {
+                    localY = new Vector3(1, 0, 0);
+                    localZ = new Vector3(0, 0, 1);
+                }
+            } else {
+                
+                let globalUp = new Vector3(0, 1, 0);
+                if (forceType === "M3" || forceType === "M2" ) {
+                    globalUp = new Vector3(0, -1, 0)
+                }
+                localZ = new Vector3().crossVectors(localX, globalUp).normalize();
+                localY = new Vector3().crossVectors(localZ, localX).normalize();
+            }
+
+            if (frame.orientation) {
+                const beta = frame.orientation * Math.PI / 180;
+                localY.applyAxisAngle(localX, beta);
+                localZ.applyAxisAngle(localX, beta);
+            }
+
+            let plotAxis = localY.clone();
+            if (forceType === 'V2') plotAxis = localY.clone();
+            if (forceType === 'V3') plotAxis = localZ.clone();
+            if (forceType === 'M2') plotAxis = localZ.clone();
+            if (forceType === 'M3') plotAxis = localY.clone();
+            if (forceType === 'T') plotAxis = localY.clone();
+            if (forceType === 'P') plotAxis = localY.clone();
+
+            const diagScale = normalizationFactor;
+
+            let lastOffsetPos: Vector3 | null = null;
+
+            results.forces.forEach((f, i) => {
+                const t = results.stations[i];
+                const pos = new Vector3().lerpVectors(start, end, t);
+                const val = f[forceType as keyof typeof f] || 0;
+                const offset = plotAxis.clone().multiplyScalar(val * diagScale);
+                const offsetPos = pos.clone().add(offset);
+
+                if (i > 0 && lastOffsetPos) {
+                    diagramPoints.push(lastOffsetPos.x, lastOffsetPos.y, lastOffsetPos.z);
+                    diagramPoints.push(offsetPos.x, offsetPos.y, offsetPos.z);
+                }
+
+                // Fill lines (every N stations or start/end to avoid too many lines)
+                if (i === 0 || i === results.forces.length - 1 || i % 2 === 0) {
+                    fillPoints.push(pos.x, pos.y, pos.z);
+                    fillPoints.push(offsetPos.x, offsetPos.y, offsetPos.z);
+                }
+
+                lastOffsetPos = offsetPos;
+            });
+        });
+
+        const dGeo = new THREE.BufferGeometry();
+        dGeo.setAttribute('position', new THREE.Float32BufferAttribute(diagramPoints, 3));
+
+        const fGeo = new THREE.BufferGeometry();
+        fGeo.setAttribute('position', new THREE.Float32BufferAttribute(fillPoints, 3));
+
+        return { diagramGeometry: dGeo, fillGeometry: fGeo };
+    }, [frames, jointMap, analysisResults, forceType, normalizationFactor]);
+
+    const color = getForceColor(forceType);
+
     return (
         <group>
-            {frames.map(frame => {
-                const results = analysisResults.frameDetailedResults![frame.id];
-                if (!results || !results.forces) return null;
+            {/* Diagram Curves */}
+            <lineSegments geometry={diagramGeometry}>
+                <lineBasicMaterial color={color} linewidth={2} />
+            </lineSegments>
 
-                const startJoint = jointMap.get(frame.jointI);
-                const endJoint = jointMap.get(frame.jointJ);
-
-                if (!startJoint || !endJoint) return null;
-
-                const start = new Vector3(startJoint.x, startJoint.y, startJoint.z);
-                const end = new Vector3(endJoint.x, endJoint.y, endJoint.z);
-
-                // Direction vector
-                const dir = new Vector3().subVectors(end, start).normalize();
-
-                // Local axes construction
-                // Standard: Y is Up (Global Y) for horizontal members.
-                // If member is vertical (parallel to Y), specialized logic.
-
-                let localX = dir.clone();
-                let localY = new Vector3(0, 1, 0);
-                let localZ = new Vector3(0, 0, 1);
-
-                // Handle vertical members
-                if (Math.abs(localX.x) < 0.001 && Math.abs(localX.z) < 0.001) {
-                    if (localX.y > 0) { // Up
-                        localY = new Vector3(-1, 0, 0);
-                        localZ = new Vector3(0, 0, 1);
-                    } else { // Down
-                        localY = new Vector3(1, 0, 0);
-                        localZ = new Vector3(0, 0, 1);
-                    }
-                } else {
-                    // standard
-                    const globalUp = new Vector3(0, 1, 0);
-                    localZ = new Vector3().crossVectors(localX, globalUp).normalize();
-                    localY = new Vector3().crossVectors(localZ, localX).normalize();
-                }
-
-                // Apply Beta Angle
-                if (frame.orientation) {
-                    const beta = frame.orientation * Math.PI / 180;
-                    localY.applyAxisAngle(localX, beta);
-                    localZ.applyAxisAngle(localX, beta);
-                }
-
-                // Determine which axis to offset for the diagram
-                let plotAxis = localY.clone();
-                if (forceType === 'V2') plotAxis = localY.clone(); // Shear Y -> Plot in Y
-                if (forceType === 'V3') plotAxis = localZ.clone(); // Shear Z -> Plot in Z
-                if (forceType === 'M2') plotAxis = localZ.clone(); // Moment about Y -> Bending in X-Z -> Plot in Z (or -Z)
-                if (forceType === 'M3') plotAxis = localY.clone(); // Moment about Z -> Bending in X-Y -> Plot in Y
-                if (forceType === 'T') plotAxis = localY.clone(); // Torsion
-                if (forceType === 'P') plotAxis = localY.clone(); // Axial
-
-                // Final Scaling Factor
-                // We use the global normalization factor so all diagrams are relative to each other logic-wise,
-                // and then apply the user's `scale` prop (which comes from deformation scale slider).
-                // We might want a separate scale slider for forces later, but for now this is fine.
-                // Reducing the user scale sensitivity a bit because 10x is common for deformation but huge for diagrams if base is 0.5m.
-                const diagScale = normalizationFactor;
-
-
-                // Build points
-                const points: Vector3[] = [];
-                const values: number[] = [];
-
-                // Base line points
-                const basePoints: Vector3[] = [];
-
-                results.forces.forEach((f, i) => {
-                    const t = results.stations[i];
-                    const pos = new Vector3().lerpVectors(start, end, t);
-                    basePoints.push(pos.clone());
-
-                    let val = 0;
-                    const key = forceType as keyof typeof f;
-                    val = f[key] || 0;
-
-                    if (forceType === 'M3') val = val; // Convention check
-
-                    values.push(val);
-
-                    const offset = plotAxis.clone().multiplyScalar(val * diagScale);
-                    points.push(pos.clone().add(offset));
-                });
-
-                // Render
-                return (
-                    <group key={frame.id}>
-                        {/* Diagram Curve */}
-                        <Line points={points} color={getForceColor(forceType)} lineWidth={2} />
-
-                        {/* Connecting Lines (Fills) */}
-                        {points.map((p, i) => {
-                            if (i % 2 !== 0 && i !== points.length - 1) return null; // Optimize: skip some lines
-                            return (
-                                <Line
-                                    key={i}
-                                    points={[basePoints[i], p]}
-                                    color={values[i] >= 0 ? getForceColor(forceType) : getForceColor(forceType)}
-                                    lineWidth={1}
-                                    transparent
-                                    opacity={0.5}
-                                />
-                            );
-                        })}
-                    </group>
-                );
-            })}
+            {/* Fill Lines */}
+            <lineSegments geometry={fillGeometry}>
+                <lineBasicMaterial color={color} transparent opacity={0.4} />
+            </lineSegments>
         </group>
     );
 };

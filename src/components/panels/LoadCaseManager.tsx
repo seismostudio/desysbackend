@@ -169,7 +169,7 @@ function LoadCaseRow({
 }: LoadCaseRowProps) {
     if (!isEditing) {
         return (
-            <tr className="border-b hover:bg-gray-50">
+            <tr className="border-b hover:bg-gray-500">
                 <td className="px-3 py-2 text-white">{loadCase.name}</td>
                 <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-1">

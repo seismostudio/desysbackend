@@ -157,7 +157,7 @@ export function FrameSectionManager({ sections, materials, onAdd, onUpdate, onDe
             )}
 
             <div className="border rounded-lg overflow-hidden bg-white">
-                <table className="w-full text-xs bg-gray-800">
+                <table className="w-full text-xs bg-gray-800 ">
                     <thead className="bg-gray-700 border-b ">
                         <tr>
                             <th className="text-left px-3 py-2 font-semibold text-white">Name</th>
@@ -235,7 +235,7 @@ function SectionRow({
         // const formatted = formatSectionProperties(section.properties);
 
         return (
-            <tr className="border-b hover:bg-gray-50">
+            <tr className="border-b hover:bg-gray-500">
                 <td className="px-3 py-2 flex items-center gap-2 text-white">
                     <div
                         className="w-4 h-4 rounded border"

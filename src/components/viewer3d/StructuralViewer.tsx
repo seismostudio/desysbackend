@@ -1,12 +1,11 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, Html } from '@react-three/drei';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useLayoutEffect } from 'react';
 import * as THREE from 'three';
 import type { Joint, Frame, Shell, FrameSection, ShellSection, ModelingMode, AnalysisResults, PointLoad, DistributedFrameLoad, AreaLoad, LoadPattern } from '../../types/structuralTypes';
 // import { getLocalAxes, getOrientedLocalAxes } from '../../utils/frameGeometry';
 import { getDisplacementColor } from '../../utils/colorUtils';
 import { LoadVisualizer } from './LoadVisualizer';
-import { DeformedFrame } from './DeformedFrame';
 import { ForceDiagrams } from './ForceDiagrams';
 
 interface StructuralViewerProps {
@@ -29,6 +28,7 @@ interface StructuralViewerProps {
     // Visualization props
     analysisResults: AnalysisResults | null;
     showDeformation: boolean;
+    showJoint: boolean;
     deformationScale: number;
     showLoads: boolean;
     loadFilterType: 'all' | 'point' | 'distributed' | 'area';
@@ -62,6 +62,7 @@ export function StructuralViewer({
     selectedShellId,
     analysisResults,
     showDeformation,
+    showJoint,
     deformationScale,
     showLoads,
     loadFilterType,
@@ -78,6 +79,19 @@ export function StructuralViewer({
 }: StructuralViewerProps) {
     const [hoverJoint, setHoverJoint] = useState<number | null>(null);
     const [cursorPos, setCursorPos] = useState<THREE.Vector3 | null>(null);
+    const [isInteracting, setIsInteracting] = useState(false);
+
+    const interactivityTimeout = useRef<NodeJS.Timeout | null>(null);
+
+    const handleCameraChange = () => {
+        setIsInteracting(true);
+        if (interactivityTimeout.current) {
+            clearTimeout(interactivityTimeout.current);
+        }
+        interactivityTimeout.current = setTimeout(() => {
+            setIsInteracting(false);
+        }, 100); // 100ms debounce to stop "interacting" state
+    };
 
     // Calculate max displacement for color mapping
     const maxDisplacement = useMemo(() => {
@@ -97,7 +111,7 @@ export function StructuralViewer({
             <ambientLight intensity={0.5} />
             <directionalLight position={[10, 10, 5]} intensity={0.8} />
             {showGrid && <Grid args={[100, 100]} cellSize={1} cellColor="#0255e6" sectionColor="#b9b9b9" />}
-            <OrbitControls makeDefault />
+            <OrbitControls makeDefault onChange={handleCameraChange} />
 
             {/* Force Diagrams */}
             {analysisResults && forceType !== 'none' && (
@@ -110,26 +124,24 @@ export function StructuralViewer({
                 />
             )}
 
-            {/* Render original geometry only when NOT in deformation mode */}
-            {!showDeformation && (
+            {/* Render original geometry if NOT in deformation mode OR results missing */}
+            {!(showDeformation && analysisResults) && (
+                // {/* {( */}
                 <>
                     {/* ... (existing original geometry rendering) ... */}
-                    {/* Render Joints */}
-                    {joints.map((joint) => (
-                        <JointSphere
-                            key={joint.id}
-                            joint={joint}
-                            restraint={joint.restraint}
-                            isSelected={selectedJointId === joint.id}
-                            isHovered={hoverJoint === joint.id}
-                            isTempSelected={tempShellJoints.includes(joint.id) || tempFrameStartJoint === joint.id}
-                            isRestraint={joint.restraint?.ux && joint.restraint?.uy && joint.restraint?.uz && joint.restraint?.rx && joint.restraint?.ry && joint.restraint?.rz}
-                            onClick={() => onJointClick(joint.id)}
-                            onHover={() => setHoverJoint(joint.id)}
-                            onUnhover={() => setHoverJoint(null)}
-                            showLabel={showJointLabels}
+                    {/* Render Joints (Instanced) */}
+                    {showJoint && (
+                        <JointsInstanced
+                            joints={joints}
+                            selectedJointId={selectedJointId}
+                            hoverJointId={hoverJoint}
+                            tempShellJoints={tempShellJoints}
+                            tempFrameStartJoint={tempFrameStartJoint}
+                            onJointClick={onJointClick}
+                            onHover={setHoverJoint}
+                            showLabels={showJointLabels && !isInteracting}
                         />
-                    ))}
+                    )}
 
                     {/* Render Frames */}
                     {frames.map((frame) => {
@@ -193,94 +205,32 @@ export function StructuralViewer({
                 </>
             )}
 
+            <CursorTracker onMove={setCursorPos} />
+
             {/* Global Axis Helper */}
             {showGlobalAxes && <GlobalAxisHelper />}
 
             {/* DEFORMED GEOMETRY RENDERING */}
             {showDeformation && analysisResults && (
                 <>
-                    {/* Deformed Joints */}
-                    {joints.map((joint) => {
-                        const disp = analysisResults.displacements.find(d => d.jointId === joint.id);
-                        if (!disp) return null;
+                    {/* Deformed Joints (Instanced) */}
+                    <DeformedJointsInstanced
+                        joints={joints}
+                        analysisResults={analysisResults}
+                        deformationScale={deformationScale}
+                        maxDisplacement={maxDisplacement}
+                    />
 
-                        const dx = disp.ux * deformationScale;
-                        const dy = disp.uy * deformationScale;
-                        const dz = disp.uz * deformationScale;
-                        const mag = Math.sqrt(disp.ux ** 2 + disp.uy ** 2 + disp.uz ** 2);
-                        const color = getDisplacementColor(mag, maxDisplacement);
-
-                        return (
-                            <mesh key={`def-joint-${joint.id}`} position={[joint.x + dx, joint.y + dy, joint.z + dz]}>
-                                <sphereGeometry args={[0.08, 16, 16]} />
-                                <meshStandardMaterial color={color} />
-                            </mesh>
-                        );
-                    })}
-
-                    {/* Deformed Frames */}
-                    {frames.map((frame) => {
-                        const jointI = joints.find(j => j.id === frame.jointI);
-                        const jointJ = joints.find(j => j.id === frame.jointJ);
-                        if (!jointI || !jointJ) return null;
-
-                        // Use detailed results if available (for curved frames)
-                        const detailed = analysisResults.frameDetailedResults?.[frame.id];
-                        let points: THREE.Vector3[] = [];
-                        let pointColors: string[] = [];
-
-                        if (detailed) {
-                            points = detailed.displacements.map((disp, i) => {
-                                // We need initial position of this internal node.
-                                // We know stations (0..1).
-                                const t = detailed.stations[i];
-                                const x = jointI.x + (jointJ.x - jointI.x) * t + disp.ux * deformationScale;
-                                const y = jointI.y + (jointJ.y - jointI.y) * t + disp.uy * deformationScale;
-                                const z = jointI.z + (jointJ.z - jointI.z) * t + disp.uz * deformationScale;
-                                return new THREE.Vector3(x, y, z);
-                            });
-
-                            // Calculate color for each point based on its OWN displacement magnitude
-                            pointColors = detailed.displacements.map(disp => {
-                                const mag = Math.sqrt(disp.ux ** 2 + disp.uy ** 2 + disp.uz ** 2);
-                                return getDisplacementColor(mag, maxDisplacement);
-                            });
-
-                        } else {
-                            // Fallback to straight line
-                            const dispI = analysisResults.displacements.find(d => d.jointId === jointI.id);
-                            const dispJ = analysisResults.displacements.find(d => d.jointId === jointJ.id);
-                            if (!dispI || !dispJ) return null;
-
-                            const p1 = new THREE.Vector3(
-                                jointI.x + dispI.ux * deformationScale,
-                                jointI.y + dispI.uy * deformationScale,
-                                jointI.z + dispI.uz * deformationScale
-                            );
-                            const p2 = new THREE.Vector3(
-                                jointJ.x + dispJ.ux * deformationScale,
-                                jointJ.y + dispJ.uy * deformationScale,
-                                jointJ.z + dispJ.uz * deformationScale
-                            );
-                            points = [p1, p2];
-
-                            const magI = Math.sqrt(dispI.ux ** 2 + dispI.uy ** 2 + dispI.uz ** 2);
-                            const magJ = Math.sqrt(dispJ.ux ** 2 + dispJ.uy ** 2 + dispJ.uz ** 2);
-
-                            pointColors = [
-                                getDisplacementColor(magI, maxDisplacement),
-                                getDisplacementColor(magJ, maxDisplacement)
-                            ];
-                        }
-
-                        return (
-                            <DeformedFrame key={`def-frame-${frame.id}`} points={points} colors={pointColors} />
-                        );
-                    })}
+                    {/* Deformed Frames (Batched) */}
+                    <DeformedFramesBatch
+                        frames={frames}
+                        joints={joints}
+                        analysisResults={analysisResults}
+                        deformationScale={deformationScale}
+                        maxDisplacement={maxDisplacement}
+                    />
                 </>
             )}
-
-            <CursorTracker onMove={setCursorPos} />
 
             {/* Load Visualization */}
             <LoadVisualizer
@@ -294,89 +244,258 @@ export function StructuralViewer({
                 filterType={loadFilterType}
                 filterPattern={loadFilterPattern}
                 showLoads={showLoads}
+                showLabels={!isInteracting}
             />
         </Canvas>
     );
 }
 
 
-// Cursor Tracker Component (to get mouse position in 3D space)
-
-
-// Joint Sphere Component
-function JointSphere({
-    joint,
-    restraint,
-    isSelected,
-    isHovered,
-    isTempSelected,
-    isRestraint,
-    onClick,
-    onHover,
-    onUnhover,
-    showLabel,
+// Deformed Joints Instanced Component
+function DeformedJointsInstanced({
+    joints,
+    analysisResults,
+    deformationScale,
+    maxDisplacement
 }: {
-    joint: Joint;
-    restraint: Joint['restraint'];
-    isSelected: boolean;
-    isHovered: boolean;
-    isTempSelected: boolean;
-    isRestraint: boolean | undefined;
-    onClick: (isDoubleClick?: boolean) => void;
-    onHover: () => void;
-    onUnhover: () => void;
-    showLabel: boolean;
+    joints: Joint[];
+    analysisResults: AnalysisResults;
+    deformationScale: number;
+    maxDisplacement: number;
 }) {
+    const meshRef = useRef<THREE.InstancedMesh>(null);
+    const dummy = useMemo(() => new THREE.Object3D(), []);
 
-    const fixed = restraint?.ux && restraint?.uy && restraint?.uz && restraint?.rx && restraint?.ry && restraint?.rz;
+    const updateInstances = () => {
+        if (!meshRef.current) return;
+        const mesh = meshRef.current;
 
-    const color = isTempSelected ? '#10b981' : isHovered ? '#f59e0b' : isRestraint ? (fixed ? '#f20b0b' : '#806b6bff') : '#6b7280';
-    const scale = isSelected || isHovered ? 0.6 : 0.5;
+        joints.forEach((joint, i) => {
+            const disp = analysisResults.displacements.find(d => d.jointId === joint.id);
+            if (!disp) return;
 
-    // Restraint Mesh
-    const restraintMesh = useMemo(() => {
+            dummy.position.set(
+                joint.x + disp.ux * deformationScale,
+                joint.y + disp.uy * deformationScale,
+                joint.z + disp.uz * deformationScale
+            );
+            dummy.scale.set(0.4, 0.4, 0.4);
+            dummy.updateMatrix();
+            mesh.setMatrixAt(i, dummy.matrix);
 
-        let geometry: THREE.BufferGeometry | THREE.Group;
-        const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.4, roughness: 0.4, opacity: 0.5 });
-        const width = 0.7;
-        const height = 0.7;
-        const length = 0.2;
-        geometry = new THREE.BoxGeometry(width, length, height);
+            const mag = Math.sqrt(disp.ux ** 2 + disp.uy ** 2 + disp.uz ** 2);
+            mesh.setColorAt(i, new THREE.Color(getDisplacementColor(mag, maxDisplacement)));
+        });
 
-        return new THREE.Mesh(geometry as THREE.BufferGeometry, mat);
-    }, [length, color]);
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        mesh.computeBoundingSphere();
+    };
+
+    // Use useLayoutEffect to update matrices after ref is available
+    useLayoutEffect(() => {
+        updateInstances();
+    }, [joints, analysisResults, deformationScale, maxDisplacement, dummy]);
 
     return (
-        <mesh
-            position={[joint.x, joint.y, joint.z]}
-            onClick={(e) => {
-                e.stopPropagation();
-                onClick(false);
-            }}
-            onDoubleClick={(e) => {
-                e.stopPropagation();
-                onClick(true);
-            }}
-            onPointerOver={(e) => {
-                e.stopPropagation();
-                onHover();
-            }}
-            onPointerOut={onUnhover}
-            scale={scale}
-        >
-            <sphereGeometry args={[0.1, 16, 16]} />
-            <meshStandardMaterial color={color} />
+        <instancedMesh ref={meshRef} args={[undefined, undefined, joints.length]}>
+            <sphereGeometry args={[0.2, 16, 16]} />
+            <meshStandardMaterial />
+        </instancedMesh>
+    );
+}
 
-            {restraint && <primitive object={restraintMesh} />}
+// Deformed Frames Batch Component
+function DeformedFramesBatch({
+    frames,
+    joints,
+    analysisResults,
+    deformationScale,
+    maxDisplacement,
+}: {
+    frames: Frame[];
+    joints: Joint[];
+    analysisResults: AnalysisResults;
+    deformationScale: number;
+    maxDisplacement: number;
+}) {
+    const geometry = useMemo(() => {
+        const positions: number[] = [];
+        const colors: number[] = [];
+        const tempColor = new THREE.Color();
 
-            {showLabel && (
-                <Html position={[0, 0, 0]} zIndexRange={[80, 0]}>
-                    <div className="px-2 py-1 rounded text-md font-mono pointer-events-none">
+        frames.forEach((frame) => {
+            const jointI = joints.find(j => j.id === frame.jointI);
+            const jointJ = joints.find(j => j.id === frame.jointJ);
+            if (!jointI || !jointJ) return;
+
+            const detailed = analysisResults.frameDetailedResults?.[frame.id];
+            if (detailed) {
+                for (let i = 0; i < detailed.displacements.length - 1; i++) {
+                    const d1 = detailed.displacements[i];
+                    const d2 = detailed.displacements[i + 1];
+                    const t1 = detailed.stations[i];
+                    const t2 = detailed.stations[i + 1];
+
+                    const p1 = [
+                        jointI.x + (jointJ.x - jointI.x) * t1 + d1.ux * deformationScale,
+                        jointI.y + (jointJ.y - jointI.y) * t1 + d1.uy * deformationScale,
+                        jointI.z + (jointJ.z - jointI.z) * t1 + d1.uz * deformationScale
+                    ];
+                    const p2 = [
+                        jointI.x + (jointJ.x - jointI.x) * t2 + d2.ux * deformationScale,
+                        jointI.y + (jointJ.y - jointI.y) * t2 + d2.uy * deformationScale,
+                        jointI.z + (jointJ.z - jointI.z) * t2 + d2.uz * deformationScale
+                    ];
+
+                    positions.push(...p1, ...p2);
+
+                    const mag1 = Math.sqrt(d1.ux ** 2 + d1.uy ** 2 + d1.uz ** 2);
+                    const mag2 = Math.sqrt(d2.ux ** 2 + d2.uy ** 2 + d2.uz ** 2);
+
+                    tempColor.set(getDisplacementColor(mag1, maxDisplacement));
+                    colors.push(tempColor.r, tempColor.g, tempColor.b);
+                    tempColor.set(getDisplacementColor(mag2, maxDisplacement));
+                    colors.push(tempColor.r, tempColor.g, tempColor.b);
+                }
+            } else {
+                const dispI = analysisResults.displacements.find(d => d.jointId === jointI.id);
+                const dispJ = analysisResults.displacements.find(d => d.jointId === jointJ.id);
+                if (!dispI || !dispJ) return;
+
+                const p1 = [
+                    jointI.x + dispI.ux * deformationScale,
+                    jointI.y + dispI.uy * deformationScale,
+                    jointI.z + dispI.uz * deformationScale
+                ];
+                const p2 = [
+                    jointJ.x + dispJ.ux * deformationScale,
+                    jointJ.y + dispJ.uy * deformationScale,
+                    jointJ.z + dispJ.uz * deformationScale
+                ];
+
+                positions.push(...p1, ...p2);
+
+                const magI = Math.sqrt(dispI.ux ** 2 + dispI.uy ** 2 + dispI.uz ** 2);
+                const magJ = Math.sqrt(dispJ.ux ** 2 + dispJ.uy ** 2 + dispJ.uz ** 2);
+
+                tempColor.set(getDisplacementColor(magI, maxDisplacement));
+                colors.push(tempColor.r, tempColor.g, tempColor.b);
+                tempColor.set(getDisplacementColor(magJ, maxDisplacement));
+                colors.push(tempColor.r, tempColor.g, tempColor.b);
+            }
+        });
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        return geo;
+    }, [frames, joints, analysisResults, deformationScale, maxDisplacement]);
+
+    return (
+        <lineSegments geometry={geometry}>
+            <lineBasicMaterial vertexColors linewidth={2} />
+        </lineSegments>
+    );
+}
+
+// Joints Instanced Component (Normal Mode)
+function JointsInstanced({
+    joints,
+    selectedJointId,
+    hoverJointId,
+    tempShellJoints,
+    tempFrameStartJoint,
+    onJointClick,
+    onHover,
+    showLabels,
+}: {
+    joints: Joint[];
+    selectedJointId: number | null;
+    hoverJointId: number | null;
+    tempShellJoints: number[];
+    tempFrameStartJoint: number | null;
+    onJointClick: (id: number, isDoubleClick?: boolean) => void;
+    onHover: (id: number | null) => void;
+    showLabels: boolean;
+}) {
+    const meshRef = useRef<THREE.InstancedMesh>(null);
+    const dummy = useMemo(() => new THREE.Object3D(), []);
+
+    const jointCount = joints.length;
+
+    const updateInstances = () => {
+        if (!meshRef.current) return;
+        const mesh = meshRef.current;
+
+        joints.forEach((joint, i) => {
+            dummy.position.set(joint.x, joint.y, joint.z);
+            const scale = selectedJointId === joint.id || hoverJointId === joint.id ? 0.6 : 0.4;
+            dummy.scale.set(scale, scale, scale);
+            dummy.updateMatrix();
+            mesh.setMatrixAt(i, dummy.matrix);
+
+            const isTempSelected = tempShellJoints.includes(joint.id) || tempFrameStartJoint === joint.id;
+            const isRestraint = !!joint.restraint && (joint.restraint.ux || joint.restraint.uy || joint.restraint.uz);
+            const fixed = joint.restraint?.ux && joint.restraint?.uy && joint.restraint?.uz && joint.restraint?.rx && joint.restraint?.ry && joint.restraint?.rz;
+
+            let colorStr = '#6b7280';
+            if (isTempSelected) colorStr = '#10b981';
+            else if (hoverJointId === joint.id) colorStr = '#f59e0b';
+            else if (isRestraint) colorStr = fixed ? '#f20b0b' : '#806b6bff';
+
+            mesh.setColorAt(i, new THREE.Color(colorStr));
+        });
+
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        mesh.computeBoundingSphere();
+    };
+
+    useLayoutEffect(() => {
+        updateInstances();
+    }, [joints, selectedJointId, hoverJointId, tempShellJoints, tempFrameStartJoint, dummy]);
+
+    return (
+        <group>
+            <instancedMesh
+                ref={meshRef}
+                args={[undefined, undefined, jointCount]}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    const instanceId = e.instanceId;
+                    if (instanceId !== undefined) {
+                        onJointClick(joints[instanceId].id, false);
+                    }
+                }}
+                onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    const instanceId = e.instanceId;
+                    if (instanceId !== undefined) {
+                        onJointClick(joints[instanceId].id, true);
+                    }
+                }}
+                onPointerOver={(e) => {
+                    e.stopPropagation();
+                    const instanceId = e.instanceId;
+                    if (instanceId !== undefined) {
+                        onHover(joints[instanceId].id);
+                    }
+                }}
+                onPointerOut={() => onHover(null)}
+            >
+                <sphereGeometry args={[0.2, 16, 16]} />
+                <meshStandardMaterial />
+            </instancedMesh>
+
+            {showLabels && joints.map(joint => (
+                <Html key={`label-${joint.id}`} position={[joint.x, joint.y, joint.z]} zIndexRange={[80, 0]} pointerEvents="none">
+                    <div className="px-1 py-0.5 rounded text-[10px] font-mono pointer-events-none text-gray-600">
                         {joint.id}
                     </div>
                 </Html>
-            )}
-        </mesh>
+            ))}
+        </group>
     );
 }
 
@@ -533,7 +652,7 @@ function FrameLine({
             )}
 
             {showLabel && (
-                <Html position={[0, 0, 0]} zIndexRange={[80, 0]} center>
+                <Html position={[0, 0, 0]} zIndexRange={[80, 0]} center pointerEvents="none">
                     <div className="px-1 py-0.5 rounded text-xs font-bold pointer-events-none">
                         F{frame.id}
                     </div>

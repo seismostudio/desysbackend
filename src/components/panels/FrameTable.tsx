@@ -45,15 +45,15 @@ export function FrameTable({
                 </div>
             )}
 
-            <div className="border rounded-lg bg-gray-800 h-[calc(100vh-250px)] overflow-y-auto no-scrollbar">
+            <div className="border rounded-lg bg-gray-800 h-[calc(100vh-250px)] overflow-y-auto custom-scrollbar">
                 <table className="w-full text-[10px]">
                     <thead className="bg-gray-700 border-b sticky top-0">
                         <tr>
                             <th className="text-left px-2 py-1 font-semibold text-white">ID</th>
-                            <th className="text-left px-2 py-1 font-semibold text-white">Joint I</th>
-                            <th className="text-left px-2 py-1 font-semibold text-white">Joint J</th>
-                            <th className="text-left px-2 py-1 font-semibold text-white">Section</th>
-                            <th className="text-right px-2 py-1 font-semibold text-white">Length (m)</th>
+                            <th className="text-center px-2 py-1 font-semibold text-white">Joint I</th>
+                            <th className="text-center px-2 py-1 font-semibold text-white">Joint J</th>
+                            <th className="text-center px-2 py-1 font-semibold text-white">Section</th>
+                            <th className="text-center px-2 py-1 font-semibold text-white">Length (m)</th>
                             <th className="text-center px-2 py-1 font-semibold w-12 text-white">Actions</th>
                         </tr>
                     </thead>
@@ -68,7 +68,7 @@ export function FrameTable({
                             return (
                                 <tr
                                     key={frame.id}
-                                    className={`border-b hover:bg-gray-50 cursor-pointer ${isSelected ? 'bg-gray-700' : ''}`}
+                                    className={`border-b hover:bg-gray-500 cursor-pointer ${isSelected ? 'bg-gray-700' : ''}`}
                                     onClick={() => onSelectFrame(frame.id)}
                                 >
                                     <td className="px-2 py-1 font-medium text-white">{frame.id}</td>

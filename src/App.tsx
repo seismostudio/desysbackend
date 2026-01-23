@@ -28,6 +28,7 @@ import { analyzeStructure, combineResults } from './utils/feaSolver';
 import { DisplacementLegendPanel } from './components/panels/DisplacementLegendPanel';
 import type { AnalysisResultMap } from './types/structuralTypes';
 import { importFromDxf } from './utils/dxfImporter';
+import { divideFrame } from './utils/modelModification';
 
 function App() {
   const [model, setModel] = useState<StructuralModel>(INITIAL_TEMPLATE_MODEL);
@@ -44,11 +45,12 @@ function App() {
 
   // Deformation Visualization
   const [showDeformation, setShowDeformation] = useState(false);
+  const [showJoints, setShowJoints] = useState(true);
   const [deformationScale, setDeformationScale] = useState(10);
   const [forceType, setForceType] = useState<string>('none');
 
   // Viewport State
-  const [showViewport, setShowViewport] = useState(false);
+  const [showViewport, setShowViewport] = useState(true);
   const [showVisualization, setShowVisualization] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(true);
 
@@ -212,48 +214,47 @@ function App() {
     setIsAnalyzing(true);
     setActiveTab('results');
 
-    // Run analysis in a timeout to allow UI to update
-    setTimeout(() => {
-      try {
-        const resultsMap: AnalysisResultMap = {};
-        const casesToRun = new Set(selectedLoadCases);
+    // Run analysis asynchronously
+    try {
+      const resultsMap: AnalysisResultMap = {};
+      const casesToRun = new Set(selectedLoadCases);
 
-        // Ensure we run cases required by selected combinations
-        selectedCombinations.forEach(comboId => {
-          const combo = model.loadCombinations.find(c => c.id === comboId);
-          if (combo) {
-            combo.cases.forEach(c => casesToRun.add(c.caseId));
-          }
-        });
-
-        // 1. Run Load Cases
-        for (const caseId of casesToRun) {
-          const results = analyzeStructure(model, caseId);
-          resultsMap[caseId] = results;
+      // Ensure we run cases required by selected combinations
+      selectedCombinations.forEach(comboId => {
+        const combo = model.loadCombinations.find(c => c.id === comboId);
+        if (combo) {
+          combo.cases.forEach(c => casesToRun.add(c.caseId));
         }
+      });
 
-        // 2. Run Combinations
-        for (const comboId of selectedCombinations) {
-          const combo = model.loadCombinations.find(c => c.id === comboId);
-          if (combo) {
-            const results = combineResults(combo, resultsMap);
-            resultsMap[comboId] = results;
-          }
-        }
-
-        setAnalysisResults(resultsMap);
-
-        // Auto-select first result
-        const firstId = Object.keys(resultsMap)[0];
-        if (firstId) setActiveResultId(firstId);
-
-      } catch (error) {
-        console.error('Analysis error:', error);
-        setAnalysisResults(null);
-      } finally {
-        setIsAnalyzing(false);
+      // 1. Run Load Cases
+      for (const caseId of casesToRun) {
+        const results = await analyzeStructure(model, caseId);
+        resultsMap[caseId] = results;
       }
-    }, 100);
+
+      // 2. Run Combinations
+      for (const comboId of selectedCombinations) {
+        const combo = model.loadCombinations.find(c => c.id === comboId);
+        if (combo) {
+          const results = await combineResults(combo, resultsMap);
+          resultsMap[comboId] = results;
+        }
+      }
+
+      setAnalysisResults(resultsMap);
+
+      // Auto-select first result
+      const firstId = Object.keys(resultsMap)[0];
+      if (firstId) setActiveResultId(firstId);
+
+    } catch (error) {
+      console.error('Analysis error:', error);
+      setAnalysisResults(null);
+      alert('Analysis failed. check console for details.');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   // Joint Handlers
@@ -290,6 +291,11 @@ function App() {
       ...prev,
       frames: prev.frames.filter((f) => f.id !== id),
     }));
+  };
+
+  const handleDivideFrame = (segments: number) => {
+    if (uiState.selectedFrameId === null) return;
+    setModel(prev => divideFrame(prev, uiState.selectedFrameId!, segments));
   };
 
   const toggleFrameCreateMode = () => {
@@ -457,6 +463,9 @@ function App() {
           setModel(projectData);
           setAnalysisResults(null);
           setActiveResultId(null);
+          setShowDeformation(false);
+          setForceType('none');
+          setShowLoads(false);
           alert('Project loaded successfully!');
         } else {
           alert('Invalid .dsys file format');
@@ -591,6 +600,7 @@ function App() {
 
             analysisResults={analysisResults && activeResultId ? analysisResults[activeResultId] : null}
             showDeformation={showDeformation}
+            showJoint={showJoints}
             deformationScale={deformationScale}
             showLoads={showLoads}
             loadFilterType={loadFilterType}
@@ -769,6 +779,17 @@ function App() {
                     </button>
                   </div>
 
+                  {/* Show Joints */}
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <span className="text-gray-600">Joints</span>
+                    <button
+                      onClick={() => setShowJoints(!showJoints)}
+                      className={`w-12 h-6 rounded-full relative transition-all ${showJoints ? 'bg-blue-600' : 'bg-gray-300'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${showJoints ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
+
                   {/* Show Global Axes */}
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <span className="text-gray-600">Global Axes</span>
@@ -909,6 +930,7 @@ function App() {
             distributedLoads={model.distributedFrameLoads}
             onAddLoad={addDistributedLoad}
             onDeleteLoad={deleteDistributedLoad}
+            onDivide={handleDivideFrame}
           />
         )
       }

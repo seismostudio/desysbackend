@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Html, Line } from '@react-three/drei';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { Vector3 } from 'three';
 import type { PointLoad, DistributedFrameLoad, AreaLoad, Joint, Frame, Shell, LoadPattern } from '../../types/structuralTypes';
@@ -14,8 +14,10 @@ interface LoadVisualizerProps {
     shells: Shell[];
     loadPatterns: LoadPattern[];
     filterType: 'all' | 'point' | 'distributed' | 'area';
-    filterPattern: string; // pattern ID or 'all'
+    filterPattern: string;
     showLoads: boolean;
+    showGlobalAxes?: boolean;
+    showLabels: boolean;
 }
 
 export function LoadVisualizer({
@@ -27,6 +29,7 @@ export function LoadVisualizer({
     filterType,
     filterPattern,
     showLoads,
+    showLabels,
 }: LoadVisualizerProps) {
     const { filteredPointLoads, filteredDistLoads } = useMemo(() => {
         if (!showLoads) return { filteredPointLoads: [], filteredDistLoads: [] };
@@ -94,59 +97,119 @@ export function LoadVisualizer({
         return { localX, localY, localZ };
     };
 
+    const { distDiagramGeometry, distFillGeometry } = useMemo(() => {
+        const diagramPoints: number[] = [];
+        const fillPoints: number[] = [];
+
+        filteredDistLoads.forEach(load => {
+            const frame = frames.find(f => f.id === load.frameId);
+            if (!frame) return;
+
+            const startJoint = joints.find(j => j.id === frame.jointI);
+            const endJoint = joints.find(j => j.id === frame.jointJ);
+            if (!startJoint || !endJoint) return;
+
+            const start = new Vector3(startJoint.x, startJoint.y, startJoint.z);
+            const end = new Vector3(endJoint.x, endJoint.y, endJoint.z);
+            const L = start.distanceTo(end);
+
+            const { localX, localY, localZ } = getFrameAxes(frame, start, end);
+
+            let loadDir = new Vector3(0, -1, 0);
+            if (load.direction === 'GlobalX') loadDir.set(1, 0, 0);
+            if (load.direction === 'GlobalY') loadDir.set(0, 1, 0);
+            if (load.direction === 'GlobalZ') loadDir.set(0, 0, 1);
+            if (load.direction === 'Gravity') loadDir.set(0, -1, 0);
+            if (load.direction === 'LocalX') loadDir.copy(localX);
+            if (load.direction === 'LocalY') loadDir.copy(localY);
+            if (load.direction === 'LocalZ') loadDir.copy(localZ);
+
+            const plotDir = loadDir.clone().negate();
+            const tStart = Math.min(Math.max(load.startDistance / L, 0), 1);
+            const tEnd = Math.min(Math.max(load.endDistance / L, 0), 1);
+
+            const pStart = new Vector3().lerpVectors(start, end, tStart);
+            const pEnd = new Vector3().lerpVectors(start, end, tEnd);
+
+            const dStart = pStart.clone().add(plotDir.clone().multiplyScalar(load.startMagnitude * distLoadScale));
+            const dEnd = pEnd.clone().add(plotDir.clone().multiplyScalar(load.endMagnitude * distLoadScale));
+
+            // Diagram curve
+            diagramPoints.push(dStart.x, dStart.y, dStart.z);
+            diagramPoints.push(dEnd.x, dEnd.y, dEnd.z);
+
+            // Intermediate arrows
+            const numArrows = 5;
+            for (let i = 0; i <= numArrows; i++) {
+                const t = i / numArrows;
+                const pInter = new Vector3().lerpVectors(pStart, pEnd, t);
+                const magInter = load.startMagnitude + (load.endMagnitude - load.startMagnitude) * t;
+                const dInter = pInter.clone().add(plotDir.clone().multiplyScalar(magInter * distLoadScale));
+
+                fillPoints.push(dInter.x, dInter.y, dInter.z);
+                fillPoints.push(pInter.x, pInter.y, pInter.z);
+
+                // Small arrow head logic could go here if needed, 
+                // but just lines is already much better.
+            }
+        });
+
+        const dGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(diagramPoints, 3));
+        const fGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(fillPoints, 3));
+
+        return { distDiagramGeometry: dGeo, distFillGeometry: fGeo };
+    }, [filteredDistLoads, frames, joints, distLoadScale]);
+
     if (!showLoads) return null;
+
+    // Optimization: Render labels only if showLabels is true and we don't have TOO many loads
+    const renderLabels = showLabels && (filteredPointLoads.length + filteredDistLoads.length < 200);
 
     return (
         <group>
-            {/* Point Loads */}
+            {/* Point Loads - Using ArrowHelper group for now but could be instanced */}
             {filteredPointLoads.map((load) => {
                 const joint = joints.find(j => j.id === load.jointId);
                 const pattern = loadPatterns.find(p => p.id === load.patternId);
-
                 if (!joint) return null;
 
                 const position = new THREE.Vector3(joint.x, joint.y, joint.z);
                 const color = pattern ? getLoadPatternColor(pattern.type) : '#9ca3af';
-
-                // Calculate total force magnitude
                 const forceMag = Math.sqrt(load.fx ** 2 + load.fy ** 2 + load.fz ** 2);
                 if (forceMag < 0.001) return null;
-
-                // Normalize direction
                 const direction = new THREE.Vector3(load.fx, load.fy, load.fz).normalize();
-
-                // Arrow length
                 const arrowLength = Math.min(Math.max(forceMag / 10, 0.5), 3);
 
                 return (
                     <group key={load.id}>
-                        {/* Arrow shaft */}
-                        <arrowHelper
-                            args={[
-                                direction,
-                                position,
-                                arrowLength,
-                                color,
-                                arrowLength * 0.2,
-                                arrowLength * 0.15
-                            ]}
-                        />
-
-                        {/* Label */}
-                        <Html position={[position.x + load.fx / 9, position.y + load.fy / 9, position.z + load.fz / 9]} center zIndexRange={[50, 0]}>
-                            <div className="bg-white/80 px-2 py-1 rounded text-[10px] font-mono border border-gray-300 pointer-events-none whitespace-nowrap">
-                                {forceMag.toFixed(1)} kN
-                            </div>
-                        </Html>
+                        <arrowHelper args={[direction, position, arrowLength, color, arrowLength * 0.2, arrowLength * 0.15]} />
+                        {renderLabels && (
+                            <Html position={[position.x + load.fx / 9, position.y + load.fy / 9, position.z + load.fz / 9]} center zIndexRange={[50, 0]} pointerEvents="none">
+                                <div className="bg-white/80 px-2 py-1 rounded text-[10px] font-mono border border-gray-300 pointer-events-none whitespace-nowrap">
+                                    {forceMag.toFixed(1)} kN
+                                </div>
+                            </Html>
+                        )}
                     </group>
                 );
             })}
 
-            {/* Distributed Loads */}
-            {filteredDistLoads.map(load => {
+            {/* Distributed Loads - Batched */}
+            {filteredDistLoads.length > 0 && (
+                <group>
+                    <lineSegments geometry={distDiagramGeometry}>
+                        <lineBasicMaterial color="#ef4444" linewidth={2} />
+                    </lineSegments>
+                    <lineSegments geometry={distFillGeometry}>
+                        <lineBasicMaterial color="#ef4444" transparent opacity={0.4} />
+                    </lineSegments>
+                </group>
+            )}
+
+            {/* Distributed Load Labels */}
+            {renderLabels && filteredDistLoads.map(load => {
                 const frame = frames.find(f => f.id === load.frameId);
                 if (!frame) return null;
-
                 const startJoint = joints.find(j => j.id === frame.jointI);
                 const endJoint = joints.find(j => j.id === frame.jointJ);
                 if (!startJoint || !endJoint) return null;
@@ -154,11 +217,8 @@ export function LoadVisualizer({
                 const start = new Vector3(startJoint.x, startJoint.y, startJoint.z);
                 const end = new Vector3(endJoint.x, endJoint.y, endJoint.z);
                 const L = start.distanceTo(end);
-
                 const { localX, localY, localZ } = getFrameAxes(frame, start, end);
-
-                // Determine Load Direction (Unit Vector)
-                let loadDir = new Vector3(0, -1, 0); // Default Gravity
+                let loadDir = new Vector3(0, -1, 0);
                 if (load.direction === 'GlobalX') loadDir.set(1, 0, 0);
                 if (load.direction === 'GlobalY') loadDir.set(0, 1, 0);
                 if (load.direction === 'GlobalZ') loadDir.set(0, 0, 1);
@@ -167,86 +227,32 @@ export function LoadVisualizer({
                 if (load.direction === 'LocalY') loadDir.copy(localY);
                 if (load.direction === 'LocalZ') loadDir.copy(localZ);
 
-                const pattern = loadPatterns.find(p => p.id === load.patternId);
-                const color = pattern ? getLoadPatternColor(pattern.type) : '#9ca3af';
-
-                // Diagram Logic
-                // Plot ordinates OPPOSITE to load direction so "arrows" point FROM curve TO member
                 const plotDir = loadDir.clone().negate();
-
-                // Points on Member Axis
-                // Handle relative vs absolute distances. 
-                // Assumption: input is m. But convert relative distance to 0-1 t for interpolation
-                // If startDistance > 1, assume it's meters. If <= 1, it's ambiguous, but let's assume meters as per type definition "m".
-                // Safest to treat as meters.
                 const tStart = Math.min(Math.max(load.startDistance / L, 0), 1);
                 const tEnd = Math.min(Math.max(load.endDistance / L, 0), 1);
-
                 const pStart = new Vector3().lerpVectors(start, end, tStart);
                 const pMid = new Vector3().lerpVectors(start, end, (tStart + tEnd) / 2);
                 const pEnd = new Vector3().lerpVectors(start, end, tEnd);
-
-                // Offset Points (Top of Diagram)
                 const dStart = pStart.clone().add(plotDir.clone().multiplyScalar(load.startMagnitude * distLoadScale));
                 const dMid = pMid.clone().add(plotDir.clone().multiplyScalar(load.startMagnitude * distLoadScale));
                 const dEnd = pEnd.clone().add(plotDir.clone().multiplyScalar(load.endMagnitude * distLoadScale));
 
-                // Vertices for the main line
-                const linePoints = [dStart, dMid, dEnd];
-
-                // Arrows / Connecting Lines
-                // We'll draw 5-10 intermediate lines to make it look like a distributed load diagram
-                const numArrows = 5;
-                const arrowLines: Vector3[][] = [];
-
-                // Start and End always have arrows
-                arrowLines.push([dStart, pStart]);
-                arrowLines.push([dEnd, pEnd]);
-
-                // Intermediates
-                for (let i = 1; i < numArrows; i++) {
-                    const t = i / numArrows;
-                    const pInter = new Vector3().lerpVectors(pStart, pEnd, t);
-                    const magInter = load.startMagnitude + (load.endMagnitude - load.startMagnitude) * t;
-                    const dInter = pInter.clone().add(plotDir.clone().multiplyScalar(magInter * distLoadScale));
-                    arrowLines.push([dInter, pInter]);
-                }
-
-                // Arrow Heads (Simple cone/line logic not easily available in Line component, 
-                // so we rely on the line itself pointing down. 
-                // Ideally we'd use arrowHelper but many instances is check-intensive. 
-                // Just lines is fine for "internal force diagram" look.)
-
                 return (
-                    <group key={load.id}>
-                        {/* Top Curve Line */}
-                        <Line points={linePoints} color={color} lineWidth={2} />
-
-                        {/* Vertical Lines (Arrows) */}
-                        {arrowLines.map((pts, i) => (
-                            <Line key={i} points={pts} color={color} lineWidth={1} transparent opacity={0.6} />
-                        ))}
-
-                        {/* Labels */}
-                        {/* <Html position={dMid} center>
-                            <div className="bg-white/80 px-1 rounded text-[9px] font-mono border border-gray-300 pointer-events-none whitespace-nowrap">
-                                {load.startMagnitude.toFixed(2)}
-                            </div>
-                        </Html> */}
+                    <group key={`label-${load.id}`}>
                         {load.startMagnitude > load.endMagnitude && (
-                            <Html position={dStart} center zIndexRange={[100, 0]}>
+                            <Html position={dStart} center zIndexRange={[100, 0]} pointerEvents="none">
                                 <div className="bg-white/80 px-1 rounded text-[9px] font-mono border border-gray-300 pointer-events-none whitespace-nowrap">
                                     {load.startMagnitude.toFixed(2)}
                                 </div>
                             </Html>)}
                         {load.startMagnitude === load.endMagnitude && (
-                            <Html position={dMid} center zIndexRange={[100, 0]}>
+                            <Html position={dMid} center zIndexRange={[100, 0]} pointerEvents="none">
                                 <div className="bg-white/80 px-1 rounded text-[9px] font-mono border border-gray-300 pointer-events-none whitespace-nowrap">
                                     {load.startMagnitude.toFixed(2)}
                                 </div>
                             </Html>)}
                         {Math.abs(load.startMagnitude - load.endMagnitude) > 0.01 && (
-                            <Html position={dEnd} center zIndexRange={[100, 0]}>
+                            <Html position={dEnd} center zIndexRange={[100, 0]} pointerEvents="none">
                                 <div className="bg-white/80 px-1 rounded text-[9px] font-mono border border-gray-300 pointer-events-none whitespace-nowrap">
                                     {load.endMagnitude.toFixed(2)}
                                 </div>

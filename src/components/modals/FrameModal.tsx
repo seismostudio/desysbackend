@@ -14,9 +14,10 @@ interface FrameModalProps {
     distributedLoads: DistributedFrameLoad[];
     onAddLoad: (load: DistributedFrameLoad) => void;
     onDeleteLoad: (id: string) => void;
+    onDivide: (segments: number) => void;
 }
 
-export function FrameModal({ frame, joints, sections, onUpdate, onDelete, onClose, loadPatterns, distributedLoads, onAddLoad, onDeleteLoad }: FrameModalProps) {
+export function FrameModal({ frame, joints, sections, onUpdate, onDelete, onClose, loadPatterns, distributedLoads, onAddLoad, onDeleteLoad, onDivide }: FrameModalProps) {
     const jointI = joints.find((j) => j.id === frame.jointI);
     const jointJ = joints.find((j) => j.id === frame.jointJ);
     const length = jointI && jointJ ? calculateFrameLength(jointI, jointJ) : 0;
@@ -29,6 +30,9 @@ export function FrameModal({ frame, joints, sections, onUpdate, onDelete, onClos
     const [patternId, setPatternId] = useState<string>(loadPatterns[0]?.id || '');
     const [direction, setDirection] = useState<'GlobalX' | 'GlobalY' | 'GlobalZ' | 'LocalX' | 'LocalY' | 'LocalZ' | 'Gravity'>('Gravity');
     const [magnitude, setMagnitude] = useState(0);
+    
+    // Divide State
+    const [divideSegments, setDivideSegments] = useState(2);
 
     const handleAddLoad = () => {
         if (!patternId) return;
@@ -45,6 +49,14 @@ export function FrameModal({ frame, joints, sections, onUpdate, onDelete, onClos
         };
         onAddLoad(newLoad);
         setMagnitude(0);
+    };
+    
+    const handleDivide = () => {
+        if (divideSegments < 2) return;
+        if (confirm(`Are you sure you want to divide this frame into ${divideSegments} segments? This action cannot be undone.`)) {
+            onDivide(divideSegments);
+            onClose();
+        }
     };
 
     const frameLoads = distributedLoads.filter(l => l.frameId === frame.id);
@@ -71,6 +83,30 @@ export function FrameModal({ frame, joints, sections, onUpdate, onDelete, onClos
                         </div>
                         <div className="flex flex-row items-start justify-between rounded-lg">
                             <span className="text-xs text-white font-bold block mb-1">ID = {frame.id}</span>
+                        </div>
+                    </section>
+                    
+                    {/* Divide Frame Section */}
+                    <section className="bg-gray-800/50 p-3 rounded-lg border border-gray-700">
+                        <h4 className="text-xs font-bold text-gray-300 uppercase tracking-widest mb-2">Modify Geometry</h4>
+                        <div className="flex items-end gap-2">
+                            <div className="flex-1">
+                                <label className="text-[10px] text-white block mb-1">Divide into Segments</label>
+                                <input 
+                                    type="number" 
+                                    min="2" 
+                                    max="100" 
+                                    value={divideSegments} 
+                                    onChange={(e) => setDivideSegments(parseInt(e.target.value))}
+                                    className="input"
+                                />
+                            </div>
+                            <button 
+                                onClick={handleDivide}
+                                className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs font-medium h-[26px] self-end mb-[1px] transition-colors"
+                            >
+                                Divide
+                            </button>
                         </div>
                     </section>
 

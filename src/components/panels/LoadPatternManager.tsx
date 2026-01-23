@@ -141,7 +141,7 @@ function PatternRow({
 }: PatternRowProps) {
     if (!isEditing) {
         return (
-            <tr className="border-b hover:bg-gray-50">
+            <tr className="border-b hover:bg-gray-500">
                 <td className="px-3 py-2 text-white">{pattern.name}</td>
                 <td className="px-3 py-2 text-white">
                     <span className={`px-2 py-1 text-white rounded text-xs`}>

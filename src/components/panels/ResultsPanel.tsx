@@ -326,9 +326,7 @@ export function ResultsPanel({ results, analysisResultMap, activeResultId, onSel
                             {Object.values(analysisResultMap).map(res => (
                                 <option key={res.loadCaseId} value={res.loadCaseId}>
                                     {res.loadCaseId.startsWith('case-') ? 'Case: ' : 'Combo: '}
-                                    {res.log[1].includes('Combining')
-                                        ? res.caseName // If it's a combination (simplified detection, usually better to store name in results)
-                                        : res.caseName}
+                                    {res.caseName || res.loadCaseId}
                                     {/* Ideally we should pass names into results or use lookup */}
                                 </option>
                             ))}
@@ -400,7 +398,7 @@ export function ResultsPanel({ results, analysisResultMap, activeResultId, onSel
                                 </thead>
                                 <tbody className="divide-y bg-gray-700">
                                     {results.displacements.map((disp, i) => ( // Added index as fallback key
-                                        <tr key={disp.jointId || i} className="hover:bg-gray-50">
+                                        <tr key={disp.jointId || i} className="hover:bg-gray-500">
                                             <td className="px-2 py-1 font-medium text-white">{disp.jointId}</td>
                                             <td className="px-2 py-1 text-right font-mono text-white">
                                                 {(disp.ux * 1000).toFixed(3)}
@@ -479,7 +477,7 @@ export function ResultsPanel({ results, analysisResultMap, activeResultId, onSel
                                 <tbody className="divide-y bg-gray-700">
                                     {processedResults.length > 0 ? (
                                         processedResults.map((row) => (
-                                            <tr key={row.id} className="hover:bg-gray-50">
+                                            <tr key={row.id} className="hover:bg-gray-500">
                                                 <td className="px-2 py-1 font-medium text-white">{row.frameId}</td>
                                                 <td className="px-2 py-1 text-gray-300">{row.sectionName}</td>
                                                 <td className="px-2 py-1 text-center text-gray-300">{row.nodeId}</td>
@@ -554,7 +552,7 @@ export function ResultsPanel({ results, analysisResultMap, activeResultId, onSel
                                             })
                                             .sort((a, b) => a.jointId - b.jointId)
                                             .map((row) => (
-                                                <tr key={row.jointId} className="hover:bg-gray-50">
+                                                <tr key={row.jointId} className="hover:bg-gray-500">
                                                     <td className="px-2 py-1 font-medium text-white">{row.jointId}</td>
                                                     <td className="px-2 py-1 text-right font-mono text-white">{row.fx.toFixed(2)}</td>
                                                     <td className="px-2 py-1 text-right font-mono text-white">{row.fy.toFixed(2)}</td>

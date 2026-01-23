@@ -37,7 +37,7 @@ export function importFromDxf(dxfContent: string, existingJointsCount: number = 
         }
 
         const id = nextJointId++;
-        joints.push({ id, x: rx, y: ry, z: rz });
+        joints.push({ id, x: -rx, y: ry, z: rz });
         pointMap.set(key, id);
         return id;
     }

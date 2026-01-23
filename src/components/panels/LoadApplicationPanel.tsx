@@ -47,7 +47,7 @@ export function LoadApplicationPanel({
                     onClick={() => setActiveTab('point')}
                     className={`cursor-pointer flex-1 px-3 py-2 text-xs font-medium transition-colors ${activeTab === 'point'
                         ? 'bg-white text-gray-600 border-b-2 border-blue-600'
-                        : 'text-white hover:bg-gray-100'
+                        : 'text-white hover:bg-gray-400 hover:text-gray-600'
                         }`}
                 >
                     Point Loads ({pointLoads.length})
@@ -56,7 +56,7 @@ export function LoadApplicationPanel({
                     onClick={() => setActiveTab('distributed')}
                     className={`cursor-pointer flex-1 px-3 py-2 text-xs font-medium transition-colors ${activeTab === 'distributed'
                         ? 'bg-white text-gray-600 border-b-2 border-blue-600'
-                        : 'text-white hover:bg-gray-100'
+                        : 'text-white hover:bg-gray-400 hover:text-gray-600'
                         }`}
                 >
                     Distributed ({distributedFrameLoads.length})
@@ -65,7 +65,7 @@ export function LoadApplicationPanel({
                     onClick={() => setActiveTab('area')}
                     className={`cursor-pointer flex-1 px-3 py-2 text-xs font-medium transition-colors ${activeTab === 'area'
                         ? 'bg-white text-gray-600 border-b-2 border-blue-600'
-                        : 'text-white hover:bg-gray-100'
+                        : 'text-white hover:bg-gray-400 hover:text-gray-600'
                         }`}
                 >
                     Area Loads ({areaLoads.length})

@@ -164,7 +164,7 @@ function MaterialRow({
 }: MaterialRowProps) {
     if (!isEditing) {
         return (
-            <tr className="border-b hover:bg-gray-50">
+            <tr className="border-b hover:bg-gray-500">
                 <td className="px-3 py-2 text-white">{material.name}</td>
                 <td className="px-3 py-2">
                     <span className="px-2 py-1 text-white text-xs">

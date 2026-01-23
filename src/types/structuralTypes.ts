@@ -163,6 +163,7 @@ export interface Joint {
   y: number; // m
   z: number; // m
   restraint?: Restraint;
+  fixed?: boolean;
 }
 
 export interface Frame {

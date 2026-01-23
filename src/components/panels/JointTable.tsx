@@ -56,7 +56,7 @@ export function JointTable({ joints, onAdd, onUpdate, onDelete, selectedJointId,
                 </button>
             </div>
 
-            <div className="border rounded-lg overflow-hidden bg-gray-800  h-[calc(100vh-250px)] overflow-y-auto no-scrollbar">
+            <div className="border rounded-lg overflow-hidden bg-gray-800  h-[calc(100vh-250px)] overflow-y-auto custom-scrollbar">
                 <table className="w-full text-[10px]">
                     <thead className="bg-gray-700 border-b sticky top-0">
                         <tr>
@@ -64,7 +64,7 @@ export function JointTable({ joints, onAdd, onUpdate, onDelete, selectedJointId,
                             <th className="text-right px-2 py-1 font-semibold text-white">X (m)</th>
                             <th className="text-right px-2 py-1 font-semibold text-white">Y (m)</th>
                             <th className="text-right px-2 py-1 font-semibold text-white">Z (m)</th>
-                            <th className="text-center px-2 py-1 font-semibold w-12 text-white">Actions</th>
+                            <th className="text-center px-2 py-1 font-semibold w-16 text-white">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -76,7 +76,7 @@ export function JointTable({ joints, onAdd, onUpdate, onDelete, selectedJointId,
                             return (
                                 <tr
                                     key={joint.id}
-                                    className={`border-b hover:bg-gray-50 cursor-pointer ${isSelected ? 'bg-gray-700' : ''} ${isEditing ? 'bg-gray-700' : ''}`}
+                                    className={`border-b hover:bg-gray-500 cursor-pointer ${isSelected ? 'bg-gray-700' : ''} ${isEditing ? 'bg-gray-700' : ''}`}
                                     onClick={() => !isEditing && onSelectJoint(joint.id)}
                                 >
                                     <td className="px-2 py-1 font-medium text-white">{joint.id}</td>

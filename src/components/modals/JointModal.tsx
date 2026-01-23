@@ -26,8 +26,16 @@ export function JointModal({ joint, onUpdate, onDelete, onClose, loadPatterns, p
         });
     };
 
+    // const handleFixedChange = (field: keyof Joint, value: boolean) => {
+    //     const currentFixed = joint || fixed: false;
+    //     onUpdate(joint.id, {
+    //         joint.fixed: value
+    //     });
+    // };
+
     // Load State
     const [patternId, setPatternId] = useState<string>(loadPatterns[0]?.id || '');
+    // const [fixedJoint, setFixedJoint] = useState(joint.fixed?);
     const [fx, setFx] = useState(0);
     const [fy, setFy] = useState(0);
     const [fz, setFz] = useState(0);
@@ -80,6 +88,19 @@ export function JointModal({ joint, onUpdate, onDelete, onClose, loadPatterns, p
                     </section>
 
                     <section>
+                        
+                        {/* <div className="grid grid-cols-3 gap-y-3 gap-x-4">
+                            <label className="flex items-center gap-2 cursor-pointer group text-white"> Fixed
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={joint.fixed || false}
+                                        onChange={(e) => handleRestraintChange(joint.fixed?, e.target.checked)}
+                                        className="w-4 h-4 border-2 border-gray-300 rounded text-blue-600 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </label>
+                        </div> */}
                         <h4 className="text-xs font-semibold text-white tracking-widest mb-2">Restraints</h4>
                         <div className="grid grid-cols-3 gap-y-3 gap-x-4">
                             {(['ux', 'uy', 'uz', 'rx', 'ry', 'rz'] as const).map((r) => (

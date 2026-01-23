@@ -315,7 +315,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
                                 onClick={() => setModelTab('joints')}
                                 className={`cursor-pointer flex-1 px-3 py-2 text-xs font-medium transition-colors ${modelTab === 'joints'
                                     ? 'bg-white text-gray-600 rounded-t-lg'
-                                    : 'text-white hover:bg-gray-100'
+                                    : 'text-white hover:bg-gray-400 hover:text-gray-600 rounded-t-lg'
                                     }`}
                             >
                                 Joints
@@ -324,7 +324,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
                                 onClick={() => setModelTab('frames')}
                                 className={`cursor-pointer flex-1 px-3 py-2 text-xs font-medium transition-colors ${modelTab === 'frames'
                                     ? 'bg-white text-gray-600 rounded-t-lg'
-                                    : 'text-white hover:bg-gray-100'
+                                    : 'text-white hover:bg-gray-400 hover:text-gray-600 rounded-t-lg'
                                     }`}
                             >
                                 Frames
@@ -333,7 +333,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
                                 onClick={() => setModelTab('shells')}
                                 className={`cursor-pointer flex-1 px-3 py-2 text-xs font-medium transition-colors ${modelTab === 'shells'
                                     ? 'bg-white text-gray-600 rounded-t-lg'
-                                    : 'text-white hover:bg-gray-100'
+                                    : 'text-white hover:bg-gray-400 hover:text-gray-600 rounded-t-lg'
                                     }`}
                             >
                                 Shells
