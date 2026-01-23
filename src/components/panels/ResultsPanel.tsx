@@ -579,7 +579,7 @@ export function ResultsPanel({ results, analysisResultMap, activeResultId, onSel
 
             <div className="px-3 py-2 border-t text-[10px] text-gray-500 flex justify-between">
                 <span>DE-Sys | by Dahar Engineer</span>
-                <span>v0.2.0</span>
+                <span>v0.7.0</span>
             </div>
 
             {analysisResultMap && (

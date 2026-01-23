@@ -179,7 +179,7 @@ class StructuralModel(BaseModel):
 
 class SolverConfig(BaseModel):
     meshing_segments: int = 6  # Number of segments to subdivide each frame (default 4, max 20)
-    enable_intersection_check: bool = False  # Enable automatic intersection detection
+    enable_intersection_check: bool = True  # Enable automatic intersection detection
     use_sparse_solver: bool = True  # Use sparse matrix solver for better performance
 
 # ============================================

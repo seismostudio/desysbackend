@@ -230,6 +230,9 @@ function App() {
       // 1. Run Load Cases
       for (const caseId of casesToRun) {
         const results = await analyzeStructure(model, caseId);
+        if (!results.isValid) {
+          throw new Error(results.log.join('\n'));
+        }
         resultsMap[caseId] = results;
       }
 
@@ -238,6 +241,9 @@ function App() {
         const combo = model.loadCombinations.find(c => c.id === comboId);
         if (combo) {
           const results = await combineResults(combo, resultsMap);
+          if (!results.isValid) {
+            throw new Error(results.log.join('\n'));
+          }
           resultsMap[comboId] = results;
         }
       }
@@ -251,7 +257,7 @@ function App() {
     } catch (error) {
       console.error('Analysis error:', error);
       setAnalysisResults(null);
-      alert('Analysis failed. check console for details.');
+      alert(error instanceof Error ? error.message : 'Analysis failed. check console for details.');
     } finally {
       setIsAnalyzing(false);
     }

@@ -4,7 +4,20 @@ import type {
     LoadCombination,
 } from '../types/structuralTypes';
 
-const API_URL = 'http://127.0.0.1:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+const MAX_JOINTS = 2000;
+const MAX_FRAMES = 2000;
+
+function validateModel(model: StructuralModel): string | null {
+    if (model.joints.length > MAX_JOINTS) {
+        return `Model too large: ${model.joints.length} joints (max ${MAX_JOINTS})`;
+    }
+    if (model.frames.length > MAX_FRAMES) {
+        return `Model too large: ${model.frames.length} frames (max ${MAX_FRAMES})`;
+    }
+    return null;
+}
 
 /**
  * Perform structural analysis for a given load case
@@ -13,6 +26,21 @@ export async function analyzeStructure(
     model: StructuralModel,
     loadCaseId: string
 ): Promise<AnalysisResults> {
+    const validationError = validateModel(model);
+    if (validationError) {
+        return {
+            loadCaseId,
+            displacements: [],
+            reactions: [],
+            frameForces: [],
+            shellStresses: [],
+            isValid: false,
+            maxDisplacement: 0,
+            timestamp: Date.now(),
+            log: [`Validation Error: ${validationError}`],
+        };
+    }
+
     try {
         const response = await fetch(`${API_URL}/analyze`, {
             method: 'POST',
