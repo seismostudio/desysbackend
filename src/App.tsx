@@ -889,7 +889,7 @@ function App() {
                 <div className="text-[10px] text-gray-500 space-y-1 mt-2">
                   <div>• Joints: {model.joints.length}</div>
                   <div>• Frames: {model.frames.length}</div>
-                  <div>• Shells: {model.shells.length}</div>
+                  {/* <div>• Shells: {model.shells.length}</div> */}
                 </div>
               </>
             )}

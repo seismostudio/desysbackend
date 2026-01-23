@@ -57,21 +57,26 @@ export function ShellSectionManager({ sections, materials, onAdd, onUpdate, onDe
                 <h3 className="font-bold text-sm uppercase tracking-wider text-white">Shell/Plate Sections</h3>
                 <button
                     onClick={startCreate}
-                    disabled={creating || editing !== null || materials.length === 0}
-                    className="cursor-pointer flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
+                    disabled={true}
+                    // disabled={creating || editing !== null || materials.length === 0}
+                    className="flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
                 >
                     <Plus className="w-3 h-3" />
                     Add Shell Section
                 </button>
             </div>
 
+            <div className="rounded p-3 text-xs text-gray-400 text-center italic">
+                "Under Development"
+            </div>
+
             {materials.length === 0 && (
-                <div className="rounded p-3 text-xs text-white">
+                <div className="hidden rounded p-3 text-xs text-white">
                     Please create at least one material before adding shell sections.
                 </div>
             )}
 
-            <div className="border rounded-lg overflow-hidden">
+            <div className="hidden border rounded-lg overflow-hidden">
                 <table className="w-full text-xs bg-gray-800">
                     <thead className="bg-gray-700 border-b">
                         <tr>

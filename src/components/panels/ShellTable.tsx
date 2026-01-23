@@ -29,23 +29,29 @@ export function ShellTable({
                 <h4 className="font-semibold text-xs uppercase tracking-wider text-white">Shells/Plates</h4>
                 <button
                     onClick={onToggleCreateMode}
-                    className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors ${isCreating
-                        ? 'bg-red-600 hover:bg-red-700 text-white'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                        }`}
+                    disabled={true}
+                    className="flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
+                // className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors ${isCreating
+                //     ? 'bg-red-600 hover:bg-red-700 text-white'
+                //     : 'bg-blue-600 hover:bg-blue-700 text-white'
+                //     }`}
                 >
                     <MousePointer2 className="w-3 h-3" />
                     {isCreating ? 'Cancel Create' : 'Create Shell'}
                 </button>
             </div>
 
+            <div className="rounded p-3 text-xs text-gray-400 text-center italic">
+                "Under Development"
+            </div>
+
             {isCreating && (
-                <div className="bg-blue-50 border border-blue-200 rounded p-2 text-[10px] text-blue-800">
+                <div className="hidden bg-blue-50 border border-blue-200 rounded p-2 text-[10px] text-blue-800">
                     <strong>Create Mode:</strong> Click 3+ joints in the 3D viewer, then press <kbd className="bg-white px-1 border rounded">Enter</kbd> to create shell.
                 </div>
             )}
 
-            <div className="border rounded-lg overflow-hidden bg-gray-800 h-fit overflow-y-auto no-scrollbar">
+            <div className="hidden border rounded-lg overflow-hidden bg-gray-800 h-fit overflow-y-auto no-scrollbar">
                 <table className="w-full text-[10px]">
                     <thead className="bg-gray-700 border-b sticky top-0">
                         <tr>

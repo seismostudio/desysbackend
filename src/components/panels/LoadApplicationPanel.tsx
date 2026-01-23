@@ -63,9 +63,11 @@ export function LoadApplicationPanel({
                 </button>
                 <button
                     onClick={() => setActiveTab('area')}
-                    className={`cursor-pointer flex-1 px-3 py-2 text-xs font-medium transition-colors ${activeTab === 'area'
+                    disabled={true}
+                    title='Area loads are not supported yet'
+                    className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${activeTab === 'area'
                         ? 'bg-white text-gray-600 border-b-2 border-blue-600'
-                        : 'text-white hover:bg-gray-400 hover:text-gray-600'
+                        : 'text-white bg-gray-400 border-b-2 border-gray-400'
                         }`}
                 >
                     Area Loads ({areaLoads.length})
@@ -73,7 +75,7 @@ export function LoadApplicationPanel({
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-auto p-3">
+            <div className="hidden flex-1 overflow-auto p-3">
                 {activeTab === 'point' && (
                     <PointLoadTab
                         loadPatterns={loadPatterns}
