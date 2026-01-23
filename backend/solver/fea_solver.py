@@ -397,6 +397,10 @@ def analyze_structure(model: StructuralModel, load_case_id: str, config: Optiona
                     (end_joint.y - start_joint.y)**2 + 
                     (end_joint.z - start_joint.z)**2
                 )
+
+                if total_length < 1e-6:
+                    log.append(f"Warning: Frame {frame.id} has zero length, skipping distributed load.")
+                    continue
                 
                 indices = mapping['jointIndices']
                 for i in range(len(indices) - 1):
@@ -613,6 +617,20 @@ def analyze_structure(model: StructuralModel, load_case_id: str, config: Optiona
                     mz=reaction_forces[base+5]/1000
                 ))
         
+        # Check for NaN in results
+        if np.isnan(u_full).any() or np.isnan(reaction_forces).any():
+             log.append("Error: Analysis produced NaN values (unstable structure or invalid inputs).")
+             return AnalysisResults(
+                loadCaseId=load_case_id,
+                displacements=[],
+                reactions=[],
+                frameDetailedResults=None,
+                isValid=False,
+                maxDisplacement=0,
+                timestamp=start_time * 1000,
+                log=log
+            )
+
         log.append('Analysis complete.')
         
         return AnalysisResults(
@@ -903,6 +921,17 @@ def combine_results(combination: LoadCombination, results_map: Dict[str, Analysi
             val = math.sqrt(d.ux**2 + d.uy**2 + d.uz**2)
             if val > max_disp: max_disp = val
             
+        if math.isnan(max_disp):
+             return AnalysisResults(
+                loadCaseId=combination.id,
+                displacements=[],
+                reactions=[],
+                isValid=False,
+                maxDisplacement=0,
+                timestamp=time.time()*1000,
+                log=log + ["Error: Combination produced NaN values."]
+            )
+            
         return AnalysisResults(
             loadCaseId=combination.id,
             caseName=combination.name,
@@ -914,6 +943,8 @@ def combine_results(combination: LoadCombination, results_map: Dict[str, Analysi
             timestamp=time.time()*1000,
             log=log
         )
+            
+
 
     except Exception as e:
         return AnalysisResults(
