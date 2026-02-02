@@ -1,6 +1,6 @@
 {
-    "name": "DE-Sys - Advanced 3D Structural Analysis",
-    "short_name": "DE-Sys",
+    "name": "DESys - Advanced 3D Structural Analysis",
+    "short_name": "DESys",
     "description": "3D Structural Analysis and Simulation Platform",
     "start_url": "/",
     "display": "standalone",
