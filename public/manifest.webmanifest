@@ -1,0 +1,17 @@
+{
+    "name": "DE-Sys - Advanced 3D Structural Analysis",
+    "short_name": "DE-Sys",
+    "description": "3D Structural Analysis and Simulation Platform",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#0f172a",
+    "icons": [
+        {
+            "src": "/Logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
