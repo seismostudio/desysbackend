@@ -22,16 +22,28 @@ import {
   type PointLoad,
   type DistributedFrameLoad,
   type AreaLoad,
+  SOFTWARE_INFO,
 } from './types/structuralTypes';
-import { Book, ChevronDown, Play, Save, FolderOpen } from 'lucide-react';
+import { Book, ChevronDown, Play, Save, FolderOpen, Bell, LogOut } from 'lucide-react';
 import { analyzeStructure, combineResults } from './utils/feaSolver';
 import { DisplacementLegendPanel } from './components/panels/DisplacementLegendPanel';
 import type { AnalysisResultMap } from './types/structuralTypes';
 import { importFromDxf } from './utils/dxfImporter';
 import { divideFrame } from './utils/modelModification';
+import { useAuth } from './contexts/AuthContext';
+import { Login } from './components/auth/Login';
+import { pb } from './lib/pocketbase';
+import { UpdatePanel } from './components/modals/UpdatePanel';
+
+
 
 function App() {
+  const { user, isValid, logout, isLoading } = useAuth();
   const [model, setModel] = useState<StructuralModel>(INITIAL_TEMPLATE_MODEL);
+  const [projectName, setProjectName] = useState<string>('New Project');
+  const [loadedMetadata, setLoadedMetadata] = useState<{ lastEdited?: string, author?: string } | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+
   const [uiState, setUIState] = useState<UIState>(DEFAULT_UI_STATE);
   const [activeTab, setActiveTab] = useState<'materials' | 'sections' | 'loads' | 'loadApp' | 'model' | 'results'>('materials');
   const [modelTab, setModelTab] = useState<'joints' | 'frames' | 'shells'>('joints');
@@ -254,10 +266,21 @@ function App() {
       const firstId = Object.keys(resultsMap)[0];
       if (firstId) setActiveResultId(firstId);
 
+      // Increment analysis count in PocketBase
+      if (user) {
+        try {
+          const currentCount = user.desys_running_count || 0;
+          await pb.collection('users').update(user.id, {
+            desys_running_count: currentCount + 1
+          });
+        } catch (updateErr) {
+        }
+      }
+
     } catch (error) {
       console.error('Analysis error:', error);
       setAnalysisResults(null);
-      alert(error instanceof Error ? error.message : 'Analysis failed. check console for details.');
+      alert(error instanceof Error ? error.message : 'Analysis failed.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -445,12 +468,22 @@ function App() {
   };
 
   const handleSaveProject = () => {
-    const data = JSON.stringify(model, null, 2);
+    const projectData = {
+      model,
+      metadata: {
+        name: projectName,
+        version: SOFTWARE_INFO.version,
+        author: user?.name || user?.email || 'Anonymous',
+        lastEdited: new Date().toISOString(),
+      }
+    };
+
+    const data = JSON.stringify(projectData, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Project_${Date.now()}.dsys`;
+    link.download = `${projectName}_${Date.now()}.dsys`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -464,15 +497,24 @@ function App() {
       try {
         const content = event.target?.result as string;
         const projectData = JSON.parse(content);
+
+        // Handle both legacy and new format
+        const modelToLoad = projectData.model || projectData;
+        const metadata = projectData.metadata;
+
         // Basic validation
-        if (projectData.joints && projectData.frames && projectData.materials) {
-          setModel(projectData);
+        if (modelToLoad.joints && modelToLoad.frames && modelToLoad.materials) {
+          setModel(modelToLoad);
+          if (metadata) {
+            setLoadedMetadata(metadata);
+            if (metadata.name) setProjectName(metadata.name);
+          }
           setAnalysisResults(null);
           setActiveResultId(null);
           setShowDeformation(false);
           setForceType('none');
           setShowLoads(false);
-          alert('Project loaded successfully!');
+          alert(`Project "${metadata?.name || 'loaded'}" loaded successfully!`);
         } else {
           alert('Invalid .dsys file format');
         }
@@ -485,6 +527,18 @@ function App() {
     e.target.value = ''; // Reset input
   };
 
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-gray-900">
+        <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isValid) {
+    return <Login />;
+  }
+
   return (
     <div className="flex flex-col h-screen w-full bg-gray-100 text-gray-900 overflow-hidden font-sans">
       {/* Header */}
@@ -494,42 +548,79 @@ function App() {
             <img src="/Logo.png" alt="Logo" className="w-10 h-10" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-xl font-bold text-white">DE-Sys</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-white uppercase tracking-tighter">DESys</h1>
+              <div className="flex items-center gap-2 border-l border-gray-700 ml-2 pl-3">
+                <input
+                  type="text"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  className="bg-transparent text-gray-300 hover:text-white focus:text-white outline-none text-sm font-medium border-b border-transparent focus:border-blue-500/50 transition-all w-48"
+                  placeholder="Project Name"
+                />
+              </div>
+            </div>
             <span className="text-xs text-gray-400">
-              3D Structural Analysis | by{' '}
+              3D Structural Analysis | v {SOFTWARE_INFO.version} | by{' '}
               <a href="https://daharengineer.com" target="_blank" rel="noopener noreferrer">
                 Dahar Engineer
               </a>
+              {loadedMetadata?.lastEdited && (
+                <span className="ml-2 border-l border-gray-700 pl-2 opacity-80">
+                  Last edited: {new Date(loadedMetadata.lastEdited).toLocaleString()} by {loadedMetadata.author || 'Anonymous'}
+                </span>
+              )}
             </span>
           </div>
         </div>
-        <div className="ml-auto flex items-center gap-4">
-          <label className="cursor-pointer flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg border border-gray-700 transition-all text-xs font-medium">
-            <FolderOpen className="text-white w-4 h-4" />
-            Open Project
-            <input
-              type="file"
-              accept=".dsys"
-              className="hidden"
-              onChange={handleOpenProject}
-            />
-          </label>
-          <button
-            onClick={handleSaveProject}
-            className="cursor-pointer flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg border border-gray-700 transition-all text-xs font-medium"
-          >
-            <Save className="text-white w-4 h-4" />
-            Save Project
-          </button>
-          <a
-            href="https://docs.daharengineer.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg border border-gray-700 transition-all text-xs font-medium"
-          >
-            <Book className="text-white w-4 h-4" />
-            Docs
-          </a>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <div>
+              <span className="text-white w-4 h-4 text-xs">Hi, {user?.name}</span>
+            </div>
+            <label className="cursor-pointer flex items-center gap-2 p-3 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-all text-xs font-medium">
+              <FolderOpen className="text-white w-4 h-4" />
+              <input
+                type="file"
+                accept=".dsys"
+                className="hidden"
+                onChange={handleOpenProject}
+              />
+            </label>
+            <button
+              onClick={handleSaveProject}
+              className="cursor-pointer flex items-center gap-2 p-3 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-all text-xs font-medium"
+            >
+              <Save className="text-white w-4 h-4" />
+            </button>
+
+          </div>
+          <div className="flex items-center gap-2 border-l border-gray-700 pl-2">
+            <a
+              href="https://docs.daharengineer.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 p-3 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-all text-xs font-medium"
+            >
+              <Book className="text-white w-4 h-4" />
+            </a>
+            <button
+              onClick={() => setShowUpdateModal(true)}
+              className="relative cursor-pointer flex items-center gap-2 p-3 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-all text-xs font-medium"
+              title="Software Updates"
+            >
+              <Bell className="text-white w-4 h-4" />
+              <span className="absolute top-3 right-2 rounded-full bg-blue-500 w-1 h-1"></span>
+            </button>
+            <button
+              onClick={logout}
+
+              className="cursor-pointer flex items-center gap-2 p-3 hover:bg-red-900/40 text-red-400 hover:text-red-300 rounded-lg transition-all text-xs font-medium"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -623,7 +714,7 @@ function App() {
           />
 
           {/* Viewport Controls */}
-          <div className="absolute top-4 right-4 bg-white/90 w-40 backdrop-blur p-3 rounded-xl shadow-xl border text-xs">
+          <div className="fixed top-20 right-4 bg-white/90 w-40 z-100 backdrop-blur p-3 rounded-xl shadow-xl border text-xs">
 
             {/* Analysis */}
             <div className="flex items-center justify-between font-bold mb-2 uppercase tracking-wider">
@@ -653,7 +744,7 @@ function App() {
                             else newSet.delete(lc.id);
                             setSelectedLoadCases(newSet);
                           }}
-                          className="w-3 h-3 rounded accent-blue-600"
+                          className="cursor-pointer w-3 h-3 rounded accent-blue-600"
                         />
                         <span className="text-[10px] text-gray-600">{lc.name}</span>
                       </label>
@@ -957,6 +1048,11 @@ function App() {
           />
         )
       }
+      <UpdatePanel
+        isOpen={showUpdateModal}
+        onClose={() => setShowUpdateModal(false)}
+      />
+
     </div >
   );
 }

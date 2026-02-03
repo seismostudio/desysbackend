@@ -258,6 +258,24 @@ export interface UIState {
 }
 
 // ============================================
+// SOFTWARE INFORMATION
+// ============================================
+
+export interface SoftwareInfo {
+  version: string;
+  name: string;
+  author: string;
+  description: string;
+}
+
+export const SOFTWARE_INFO: SoftwareInfo = {
+  version: '1.0.0',
+  name: 'DESys',
+  author: 'Dahar Engineer',
+  description: '3D Structural Analysis',
+};
+
+// ============================================
 // ANALYSIS RESULTS (for future FEA)
 // ============================================
 

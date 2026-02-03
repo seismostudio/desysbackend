@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
-import type { AnalysisResults, AnalysisResultMap, Joint, Frame, FrameSection } from '../../types/structuralTypes';
+import { type AnalysisResults, type AnalysisResultMap, type Joint, type Frame, type FrameSection, SOFTWARE_INFO } from '../../types/structuralTypes';
 import { ArrowUpDown, ArrowUp, ArrowDown, Filter, ChevronDown, Check, Download } from 'lucide-react';
 import { ExportResultsModal } from '../modals/ExportResultsModal';
 import { downloadCSV, generateDisplacementsCSV, generateFrameForcesCSV, generateReactionsCSV } from '../../utils/csvExport';
@@ -578,8 +578,8 @@ export function ResultsPanel({ results, analysisResultMap, activeResultId, onSel
             </div>
 
             <div className="px-3 py-2 border-t text-[10px] text-gray-500 flex justify-between">
-                <span>DE-Sys | by Dahar Engineer</span>
-                <span>v0.7.0</span>
+                <span>DESys | by Dahar Engineer</span>
+                <span>v {SOFTWARE_INFO.version}</span>
             </div>
 
             {analysisResultMap && (
